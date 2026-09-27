@@ -1,17 +1,16 @@
-CLAUDE.md — rules for working in this repo
+# Souqna (سوقنا)
 
-The full product brief is in PROMPT.md. Read it before doing anything.
+A peer-to-peer marketplace for Sudan, built for small, everyday sellers. The platform holds the buyer's money (escrow) until the item is delivered and confirmed.
 
-Working rules
-Work one phase at a time (see PROMPT.md §6). Stop at the end of each phase, summarise, and wait for approval.
-Phase 0 is planning only. Do not write application code until the plan is approved.
-Everything must run in GitHub Codespaces. The owner's laptop is a 2014 MacBook Pro, so there is no local dev.
-Explain run/setup steps using the exact names of buttons and settings as they appear on screen.
-Non-negotiables
-Money = integer minor units (bigint), double-entry ledger, never floats, never a mutable balance column.
-Order/escrow changes go only through the state machine, and every transition is logged to order_events.
-Every write endpoint for payments/orders is idempotent.
-Arabic-first, RTL, all UI text in i18n files.
-Phone numbers, exact addresses, and ID documents are never exposed beyond the roles allowed in PROMPT.md §7.
-No secrets in git. Use .env.example with placeholders only.
-Tests are required for the state machine, ledger, and authorisation (IDOR) checks.
+**Status:** Phase 0 plan written and awaiting approval: [`docs/plan/phase-0.md`](docs/plan/phase-0.md). No application code yet.
+
+## Start building
+1. Open this repo in **Claude Code on the web**.
+2. Send: `Read PROMPT.md and CLAUDE.md, then start Phase 0.`
+3. Review the plan Claude returns, answer its open questions, and approve each phase before it moves on.
+
+## Files
+- `PROMPT.md`: the full product and engineering brief
+- `CLAUDE.md`: working rules Claude Code follows automatically in this repo
+- `docs/plan/`: phase plans
+- `docs/decisions/`: short notes on important decisions
