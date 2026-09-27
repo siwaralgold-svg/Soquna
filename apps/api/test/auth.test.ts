@@ -299,3 +299,20 @@ describe('security headers', () => {
 function phoneHash(localPhone: string): Buffer {
   return t.app.ctx.hashPhone(toE164(localPhone));
 }
+
+describe('global rate limit', () => {
+  it('limits any single IP to 300 requests a minute, with a Retry-After header', async () => {
+    const ip = randomIp();
+    let last;
+    for (let i = 0; i < 301; i++) {
+      last = await t.app.inject({ url: '/api/health', remoteAddress: ip });
+    }
+    expect(last!.statusCode).toBe(429);
+    expect(last!.json()).toMatchObject({ error: 'rate_limited' });
+    expect(Number(last!.headers['retry-after'])).toBeGreaterThan(0);
+    // Another IP is unaffected.
+    expect((await t.app.inject({ url: '/api/health', remoteAddress: randomIp() })).statusCode).toBe(
+      200,
+    );
+  });
+});
