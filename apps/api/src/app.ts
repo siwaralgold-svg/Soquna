@@ -5,11 +5,13 @@ import { createContext, type AppDeps } from './context';
 import { authRoutes } from './modules/auth/routes';
 import { registerSessionHook } from './modules/auth/session';
 import { catalogRoutes } from './modules/catalog/routes';
+import { chatRoutes } from './modules/chat/routes';
 import { devRoutes } from './modules/dev/routes';
 import { listingRoutes } from './modules/listings/routes';
 import { profileRoutes } from './modules/profile/routes';
 import { registerErrorHandling } from './plugins/errors';
 import { registerSecurity } from './plugins/security';
+import { registerRealtime } from './realtime';
 
 export interface BuildAppOptions {
   /** Custom pino destination, used by tests to check that logs contain no PII. */
@@ -62,10 +64,12 @@ export async function buildApp(
       await api.register(profileRoutes);
       await api.register(catalogRoutes);
       await api.register(listingRoutes);
+      await api.register(chatRoutes);
       if (deps.config.NODE_ENV !== 'production') await api.register(devRoutes);
     },
     { prefix: '/api' },
   );
+  registerRealtime(app);
 
   return app;
 }

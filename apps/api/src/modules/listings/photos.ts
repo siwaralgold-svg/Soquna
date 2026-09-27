@@ -8,12 +8,14 @@ import { encodeWebp, openImage } from '../../lib/images';
 export const photoKey = (storageKey: string, width: number) => `${storageKey}/${width}.webp`;
 
 /**
- * Stores an uploaded listing photo in three widths (320/800/1280 px, never enlarged), as
- * re-encoded WebP without metadata. The photo is unattached until a listing is saved with it.
+ * Stores an uploaded photo in three widths (320/800/1280 px, never enlarged), as re-encoded
+ * WebP without metadata. It stays unattached (visible only to its owner) until it is used in a
+ * listing or sent in a chat.
  */
-export async function storeListingPhoto(
+export async function storePhoto(
   ctx: AppContext,
   ownerId: string,
+  kind: 'listing_photo' | 'chat_photo',
   input: Buffer,
 ): Promise<{ id: string }> {
   const image = await openImage(input);
@@ -27,7 +29,7 @@ export async function storeListingPhoto(
   );
 
   const id = randomUUID();
-  const storageKey = `listings/${ownerId}/${id}`;
+  const storageKey = `${kind === 'listing_photo' ? 'listings' : 'chat'}/${ownerId}/${id}`;
   await Promise.all(
     variants.map((v, i) =>
       ctx.storage.put(photoKey(storageKey, PHOTO_WIDTHS[i]!), v.data, 'image/webp'),
@@ -38,7 +40,7 @@ export async function storeListingPhoto(
   await ctx.db.insert(media).values({
     id,
     ownerId,
-    kind: 'listing_photo',
+    kind,
     storageKey,
     mime: 'image/webp',
     bytes: largest.data.length,

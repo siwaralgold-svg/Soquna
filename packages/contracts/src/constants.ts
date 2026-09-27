@@ -26,6 +26,9 @@ export const ERROR_CODES = [
   'idempotency_conflict',
   'listing_prohibited',
   'listing_limit_reached',
+  'listing_unavailable',
+  'chat_limit_reached',
+  'offer_not_allowed',
   'internal_error',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -54,4 +57,22 @@ export interface ApiError {
   error: ErrorCode;
   fields?: Record<string, string>;
   retryAfterSeconds?: number;
+}
+
+/** Socket.IO path, under /api so it goes through the same routing as the API. */
+export const REALTIME_PATH = '/api/socket.io';
+
+export const CHAT_TEXT_MAX = 1000;
+export const OFFER_ACTIONS = ['accept', 'decline', 'withdraw'] as const;
+export type OfferAction = (typeof OFFER_ACTIONS)[number];
+
+/** Events the server pushes over Socket.IO. Each carries a ChatMessage. */
+export const REALTIME_EVENTS = {
+  message: 'chat:message',
+  messageUpdated: 'chat:message-updated',
+} as const;
+
+export interface UnreadCount {
+  signedIn: boolean;
+  count: number;
 }

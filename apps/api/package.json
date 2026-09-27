@@ -15,6 +15,7 @@
     "@fastify/helmet": "^13.1.1",
     "@fastify/multipart": "^10.1.2",
     "@fastify/rate-limit": "^11.2.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "@souqna/contracts": "workspace:*",
     "@souqna/db": "workspace:*",
     "@souqna/domain": "workspace:*",
@@ -25,10 +26,12 @@
     "pino": "^10.3.1",
     "postgres": "^3.4.9",
     "sharp": "^0.35.4",
+    "socket.io": "^4.8.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15"
   }
 }

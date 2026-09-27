@@ -8,6 +8,7 @@ import { ProfileForm } from '@/components/profile-form';
 import { Alert, Button, buttonClasses, Card } from '@/components/ui';
 import { Link, useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/api';
+import { closeRealtime } from '@/lib/realtime';
 import { compressImage } from '@/lib/compress-image';
 import { useErrorMessage } from '@/lib/use-error-message';
 import { useMe } from '@/lib/use-me';
@@ -39,6 +40,7 @@ export default function AccountPage() {
 
   async function logout() {
     await api('/auth/logout', { method: 'POST' }).catch(() => {});
+    closeRealtime();
     router.replace('/');
   }
 

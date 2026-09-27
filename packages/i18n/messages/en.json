@@ -24,7 +24,9 @@
     "search": "Search",
     "sell": "Sell",
     "favourites": "Saved",
-    "bottom": "Main navigation"
+    "bottom": "Main navigation",
+    "chats": "Chats",
+    "unreadBadge": "{count} unread messages"
   },
   "home": {
     "promiseTitle": "Your money is safe until you receive your item",
@@ -119,6 +121,9 @@
     "idempotency_conflict": "This request is still being processed. Wait a moment and try again.",
     "listing_prohibited": "This listing includes something that isn't allowed on Souqna. Check the list of prohibited items.",
     "listing_limit_reached": "You've reached the listing limit. New accounts can have up to 5 listings in their first week.",
+    "listing_unavailable": "This listing isn't available right now.",
+    "chat_limit_reached": "You've started too many chats today. Try again tomorrow.",
+    "offer_not_allowed": "You can't make an offer on this listing right now.",
     "internal_error": "Something went wrong on our side. Try again shortly.",
     "network": "No connection. Check your network and try again."
   },
@@ -185,7 +190,7 @@
     "memberSince": "On Souqna since {date}",
     "chatSeller": "Chat with seller",
     "buy": "Buy safely",
-    "comingSoon": "Chat and protected buying arrive in the next update.",
+    "comingSoon": "Protected buying arrives in the next update.",
     "safetyTitle": "Safety tips",
     "safety1": "Never send money outside Souqna. When you pay in the app, we hold your money until you receive the item.",
     "safety2": "Don't share your phone number or address in listings or chat.",
@@ -219,7 +224,9 @@
     "photoAlt": "Photo {n} of {total}",
     "noPhoto": "No photo",
     "soldBadge": "Sold",
-    "reservedBadge": "Reserved"
+    "reservedBadge": "Reserved",
+    "makeOffer": "Make an offer",
+    "chatStarting": "Opening chat…"
   },
   "sell": {
     "title": "Sell something",
@@ -287,5 +294,52 @@
   },
   "footer": {
     "prohibited": "Prohibited items"
+  },
+  "chat": {
+    "title": "Chats",
+    "empty": "No chats yet. Open any listing and tap “Chat with seller”.",
+    "buying": "Buying",
+    "selling": "Selling",
+    "you": "You: {text}",
+    "photo": "Photo",
+    "offerPreview": "Price offer",
+    "noMessages": "No messages yet",
+    "unread": "{count} unread",
+    "viewListing": "View listing",
+    "loadOlder": "Show earlier messages",
+    "placeholder": "Write a message…",
+    "messageLabel": "Message",
+    "send": "Send",
+    "attachPhoto": "Send a photo",
+    "photoAlt": "Photo sent in chat",
+    "openPhoto": "Open the full-size photo",
+    "makeOffer": "Make an offer",
+    "offerAmount": "Your offer (SDG)",
+    "offerHint": "It must be no more than the asking price of {price}.",
+    "sendOffer": "Send offer",
+    "offerTooHigh": "Your offer can’t be more than the asking price.",
+    "offerTitle": "Price offer",
+    "offer_pending": "Waiting",
+    "offer_accepted": "Accepted",
+    "offer_declined": "Declined",
+    "offer_withdrawn": "Withdrawn",
+    "offer_expired": "Expired",
+    "offerExpires": "Expires {time}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "withdraw": "Withdraw offer",
+    "offerAcceptedNote": "The seller accepted. Protected buying at this price arrives in the next update.",
+    "sending": "Sending…",
+    "waiting": "Waiting for a connection. It will send by itself when you’re back online.",
+    "failed": "Not sent: {reason}",
+    "delete": "Delete",
+    "maskedNote": "We hid a phone number or link. Keep talking here: sharing contact details before ordering is how most scams start.",
+    "offPlatformNote": "Careful: only payments made through Souqna are protected. Never transfer money directly to anyone, by Bankak or cash.",
+    "contactHint": "Phone numbers and links are hidden until you place an order.",
+    "safetyTitle": "Staying safe",
+    "safety1": "Only pay through Souqna. We hold your money until you receive the item.",
+    "safety2": "Don’t share your number or address. We hide numbers and links in chat.",
+    "safety3": "If someone asks you to send money outside the app, report them.",
+    "listingGone": "This listing is no longer available, so you can’t send new messages."
   }
 }

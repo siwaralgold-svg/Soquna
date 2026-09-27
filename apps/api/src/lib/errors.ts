@@ -17,6 +17,9 @@ const STATUS: Record<ErrorCode, number> = {
   idempotency_conflict: 409,
   listing_prohibited: 422,
   listing_limit_reached: 403,
+  listing_unavailable: 409,
+  chat_limit_reached: 429,
+  offer_not_allowed: 409,
   internal_error: 500,
 };
 

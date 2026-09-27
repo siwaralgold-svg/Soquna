@@ -14,7 +14,16 @@ export interface AppDeps {
   storage: StorageProvider;
 }
 
+export interface Realtime {
+  /** Pushes an event to every open connection of each user (all their devices). */
+  toUsers(userIds: string[], event: string, payload: unknown): void;
+  /** Closes the live connections of ended sessions (logout, "log out other devices"). */
+  endSessions(sessionIds: string[]): void;
+}
+
 export interface AppContext extends AppDeps {
+  /** Set once Socket.IO is attached (not available in command-line tools). */
+  realtime?: Realtime;
   cipher: FieldCipher;
   limiter: RateLimiter;
   hashPhone: (e164: string) => Buffer;

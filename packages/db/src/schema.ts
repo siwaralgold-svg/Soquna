@@ -1,4 +1,4 @@
-import { LISTING_CONDITIONS, LISTING_STATUSES } from '@souqna/domain';
+import { LISTING_CONDITIONS, LISTING_STATUSES, OFFER_STATUSES } from '@souqna/domain';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -40,7 +40,7 @@ export const staffRole = pgEnum('staff_role', [
   'admin',
   'verifier',
 ]);
-export const mediaKind = pgEnum('media_kind', ['avatar', 'listing_photo']);
+export const mediaKind = pgEnum('media_kind', ['avatar', 'listing_photo', 'chat_photo']);
 export const mediaStatus = pgEnum('media_status', ['ready', 'deleted']);
 
 export const cities = pgTable('cities', {
@@ -328,4 +328,111 @@ export const idempotencyKeys = pgTable(
     completedAt: tstz('completed_at'),
   },
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
+);
+
+export const messageType = pgEnum('message_type', ['text', 'image', 'offer']);
+export const offerStatus = pgEnum('offer_status', OFFER_STATUSES);
+export const fraudFlagStatus = pgEnum('fraud_flag_status', ['open', 'cleared', 'actioned']);
+
+/** One private conversation per (listing, buyer). The seller is the listing's seller. */
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => users.id),
+    sellerId: uuid('seller_id')
+      .notNull()
+      .references(() => users.id),
+    lastMessageAt: tstz('last_message_at').notNull().defaultNow(),
+    buyerReadAt: tstz('buyer_read_at').notNull().defaultNow(),
+    sellerReadAt: tstz('seller_read_at').notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('conversations_listing_buyer_uq').on(t.listingId, t.buyerId),
+    index('conversations_buyer_idx').on(t.buyerId, t.lastMessageAt),
+    index('conversations_seller_idx').on(t.sellerId, t.lastMessageAt),
+    check('conversations_not_self', sql`${t.buyerId} <> ${t.sellerId}`),
+  ],
+);
+
+export const offers = pgTable(
+  'offers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => users.id),
+    amountMinor: bigint('amount_minor', { mode: 'bigint' }).notNull(),
+    status: offerStatus('status').notNull().default('pending'),
+    expiresAt: tstz('expires_at').notNull(),
+    respondedAt: tstz('responded_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // At most one open offer per conversation.
+    uniqueIndex('offers_one_pending_uq')
+      .on(t.conversationId)
+      .where(sql`${t.status} = 'pending'`),
+    check('offers_amount_positive', sql`${t.amountMinor} > 0`),
+  ],
+);
+
+/**
+ * Chat messages. Text is stored already masked (phone numbers and links replaced) while no
+ * order exists, so the original contact details are never kept.
+ */
+export const messages = pgTable(
+  'messages',
+  {
+    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => users.id),
+    type: messageType('type').notNull(),
+    body: text('body'),
+    mediaId: uuid('media_id').references(() => media.id),
+    offerId: uuid('offer_id').references(() => offers.id),
+    flags: text('flags')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('messages_conversation_idx').on(t.conversationId, t.id),
+    // A photo belongs to exactly one message.
+    uniqueIndex('messages_media_uq').on(t.mediaId),
+  ],
+);
+
+/** Automatic fraud signals for the admin fraud queue (Phase 6). */
+export const fraudFlags = pgTable(
+  'fraud_flags',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    rule: text('rule').notNull(),
+    targetType: text('target_type').notNull(),
+    targetId: text('target_id').notNull(),
+    status: fraudFlagStatus('status').notNull().default('open'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('fraud_flags_user_idx').on(t.userId, t.createdAt)],
 );

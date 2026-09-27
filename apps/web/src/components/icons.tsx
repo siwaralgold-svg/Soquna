@@ -64,3 +64,31 @@ export const PinIcon = (p: SVGProps<SVGSVGElement>) => (
     <circle cx="12" cy="10" r="2.5" />
   </Icon>
 );
+
+export const ChatIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </Icon>
+);
+
+export const CameraIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </Icon>
+);
+
+/** Paper plane. Mirrored in RTL so it points the way text flows. */
+export const SendIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p} className={`rtl:-scale-x-100 ${p.className ?? ''}`}>
+    <path d="M4 12 20 4l-6 16-3-7z" />
+    <path d="m11 13 9-9" />
+  </Icon>
+);
+
+export const TagIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M3 12V4h8l10 10-8 8z" />
+    <circle cx="7.5" cy="8.5" r="1.5" />
+  </Icon>
+);

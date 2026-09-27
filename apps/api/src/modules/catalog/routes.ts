@@ -1,5 +1,13 @@
 import { PHOTO_WIDTHS, type CitiesResponse, type PhotoWidth } from '@souqna/contracts';
-import { cities, listingPhotos, listings, media, neighbourhoods } from '@souqna/db';
+import {
+  cities,
+  conversations,
+  listingPhotos,
+  listings,
+  media,
+  messages,
+  neighbourhoods,
+} from '@souqna/db';
 import { isPubliclyVisible } from '@souqna/domain';
 import { and, asc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -41,7 +49,8 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   // Who may see a picture:
   //  - avatars: everyone (they appear next to listings);
   //  - listing photos: everyone while the listing is public, otherwise only the seller
-  //    (drafts, listings under review, and photos not yet attached to a listing).
+  //    (drafts, listings under review, and photos not yet attached to a listing);
+  //  - chat photos: only the two people in the conversation (and the sender before sending).
   // Images get their own, higher limit: one page of listings loads ~20 of them.
   app.get(
     '/media/:id',
@@ -56,10 +65,14 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
           storageKey: media.storageKey,
           mime: media.mime,
           listingStatus: listings.status,
+          chatBuyer: conversations.buyerId,
+          chatSeller: conversations.sellerId,
         })
         .from(media)
         .leftJoin(listingPhotos, eq(listingPhotos.mediaId, media.id))
         .leftJoin(listings, eq(listings.id, listingPhotos.listingId))
+        .leftJoin(messages, eq(messages.mediaId, media.id))
+        .leftJoin(conversations, eq(conversations.id, messages.conversationId))
         .where(and(eq(media.id, id), eq(media.status, 'ready')));
       if (!row) throw new AppError('not_found');
 
@@ -72,6 +85,14 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         key = photoKey(row.storageKey, w);
         // Short public caching: a listing can be hidden later and its photos must follow.
         cacheControl = isPublic ? 'public, max-age=3600' : 'private, no-store';
+      } else if (row.kind === 'chat_photo') {
+        const viewer = request.auth?.userId;
+        const allowed =
+          viewer !== undefined &&
+          (viewer === row.ownerId || viewer === row.chatBuyer || viewer === row.chatSeller);
+        if (!allowed) throw new AppError('not_found');
+        key = photoKey(row.storageKey, w);
+        cacheControl = 'private, max-age=86400';
       }
 
       const object = await ctx.storage.get(key);

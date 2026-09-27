@@ -15,7 +15,7 @@ import { AppError } from '../../lib/errors';
 import { IMAGE_UPLOAD_MAX_BYTES } from '../../lib/images';
 import { idempotency } from '../../plugins/idempotency';
 import { requireAuth } from '../auth/session';
-import { storeListingPhoto } from './photos';
+import { storePhoto } from './photos';
 import {
   categoryTree,
   favouriteListings,
@@ -66,7 +66,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
         limits: { fileSize: IMAGE_UPLOAD_MAX_BYTES, files: 1, fields: 0 },
       });
       if (!file) throw new AppError('upload_invalid');
-      const photo = await storeListingPhoto(ctx, userId, await file.toBuffer());
+      const photo = await storePhoto(ctx, userId, 'listing_photo', await file.toBuffer());
       return reply.status(201).send(photo);
     },
   );

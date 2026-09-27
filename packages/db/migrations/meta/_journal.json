@@ -29,6 +29,13 @@
       "when": 1790493184304,
       "tag": "0003_listings",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790495622731,
+      "tag": "0004_chat",
+      "breakpoints": true
     }
   ]
 }

@@ -4,13 +4,14 @@ import {
   LISTING_CONDITIONS,
   LISTING_STATUSES,
   MAX_LISTING_PHOTOS,
+  OFFER_STATUSES,
   normalizeSudanPhone,
   parsePriceInput,
   toAsciiDigits,
   validateDisplayName,
 } from '@souqna/domain';
 import { z } from 'zod';
-import { LISTING_SORTS, LOCALES, REPORT_REASONS } from './constants';
+import { CHAT_TEXT_MAX, LISTING_SORTS, LOCALES, OFFER_ACTIONS, REPORT_REASONS } from './constants';
 
 export * from './constants';
 
@@ -236,3 +237,74 @@ export type ListingDetail = z.infer<typeof listingDetail>;
 
 export const categoryTree = z.array(named.extend({ children: z.array(named) }));
 export type CategoryTree = z.infer<typeof categoryTree>;
+
+// ---------------------------------------------------------------------------
+// Chat and offers
+
+export const startConversationInput = z.object({ listingId: z.uuid() }).strict();
+
+export const sendMessageInput = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string().trim().min(1).max(CHAT_TEXT_MAX) }).strict(),
+  z.object({ type: z.literal('image'), photoId: z.uuid() }).strict(),
+  z.object({ type: z.literal('offer'), amount: priceSchema }).strict(),
+]);
+export type SendMessageInput = z.input<typeof sendMessageInput>;
+
+export const offerActionInput = z.object({ action: z.enum(OFFER_ACTIONS) }).strict();
+
+export const messagesQuery = z.object({
+  before: z.coerce.bigint().optional(),
+  after: z.coerce.bigint().optional(),
+});
+
+export const chatMessage = z.object({
+  /** Increasing per conversation; used to fetch newer/older pages. */
+  id: z.string(),
+  conversationId: z.uuid(),
+  senderId: z.uuid(),
+  type: z.enum(['text', 'image', 'offer']),
+  text: z.string().nullable(),
+  photoId: z.uuid().nullable(),
+  offer: z
+    .object({
+      id: z.uuid(),
+      amountMinor: z.string(),
+      status: z.enum(OFFER_STATUSES),
+      expiresAt: z.string(),
+    })
+    .nullable(),
+  flags: z.array(z.enum(['contact_masked', 'off_platform'])),
+  createdAt: z.string(),
+});
+export type ChatMessage = z.infer<typeof chatMessage>;
+
+export const messagesPage = z.object({ items: z.array(chatMessage), hasMore: z.boolean() });
+export type MessagesPage = z.infer<typeof messagesPage>;
+
+export const conversationSummary = z.object({
+  id: z.uuid(),
+  role: z.enum(['buyer', 'seller']),
+  listing: z.object({
+    id: z.uuid(),
+    title: z.string(),
+    priceMinor: z.string(),
+    negotiable: z.boolean(),
+    status: z.enum(LISTING_STATUSES),
+    coverPhotoId: z.uuid().nullable(),
+  }),
+  counterpart: z.object({
+    id: z.uuid(),
+    displayName: z.string(),
+    avatarUrl: z.string().nullable(),
+  }),
+  lastMessage: z
+    .object({
+      type: z.enum(['text', 'image', 'offer']),
+      text: z.string().nullable(),
+      senderId: z.uuid(),
+    })
+    .nullable(),
+  unread: z.number(),
+  lastMessageAt: z.string(),
+});
+export type ConversationSummary = z.infer<typeof conversationSummary>;

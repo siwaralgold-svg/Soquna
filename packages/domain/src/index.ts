@@ -4,5 +4,6 @@ export * from './contact';
 export * from './display-name';
 export * from './listing';
 export * from './money';
+export * from './offer';
 export * from './prohibited';
 export * from './search';

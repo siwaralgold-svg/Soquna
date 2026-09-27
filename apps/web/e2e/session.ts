@@ -41,3 +41,45 @@ export async function photoFixture(colour: string): Promise<Buffer> {
     .jpeg()
     .toBuffer();
 }
+
+/** Creates and publishes a listing through the API, for tests that start from a live listing. */
+export async function createListing(
+  page: Page,
+  { title, price, negotiable }: { title: string; price: string; negotiable: boolean },
+): Promise<string> {
+  const headers = { 'x-souqna-csrf': '1', origin: new URL(BASE_URL).origin };
+  const upload = await page.request.post('/api/listing-photos', {
+    headers,
+    multipart: {
+      file: { name: 'photo.jpg', mimeType: 'image/jpeg', buffer: await photoFixture('#3b6ea8') },
+    },
+  });
+  expect(upload.ok()).toBe(true);
+  const { id: photoId } = await upload.json();
+
+  const categories = await (await page.request.get('/api/categories')).json();
+  const phones = categories
+    .flatMap((c: { children: Array<{ id: string; nameEn: string }> }) => c.children)
+    .find((c: { nameEn: string }) => c.nameEn === 'Mobile phones');
+  const cities = await (await page.request.get('/api/cities')).json();
+  const city = cities.find((c: { nameEn: string }) => c.nameEn === 'Port Sudan');
+
+  const created = await page.request.post('/api/listings', {
+    headers: { ...headers, 'idempotency-key': crypto.randomUUID() },
+    data: {
+      title,
+      description: 'نظيف جداً، شغّال بدون أي مشكلة، معاهو الشاحن.',
+      categoryId: phones.id,
+      condition: 'good',
+      price,
+      negotiable,
+      cityId: city.id,
+      photoIds: [photoId],
+      publish: true,
+    },
+  });
+  expect(created.status()).toBe(201);
+  const listing = await created.json();
+  expect(listing.status).toBe('active');
+  return listing.id;
+}

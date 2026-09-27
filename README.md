@@ -2,7 +2,7 @@
 
 A peer-to-peer marketplace for Sudan, built for small, everyday sellers. The platform holds the buyer's money (escrow) until the item is delivered and confirmed.
 
-**Status:** Phase 2 (Listings) built and waiting for review. Plan: [`docs/plan/phase-0.md`](docs/plan/phase-0.md).
+**Status:** Phase 3 (Chat & offers) built and waiting for review. Plan: [`docs/plan/phase-0.md`](docs/plan/phase-0.md).
 
 What works today:
 
@@ -12,6 +12,9 @@ What works today:
 - **Sell:** post a listing with up to 8 photos (shrunk on the phone, location data removed), category, condition, price and city. The form is saved on the phone, so a lost connection or a closed tab doesn't lose work; photos taken offline upload when the signal comes back.
 - **Find:** home feed, category chips, and search in Arabic or English that copes with spelling variants (أ/إ/آ, ة/ه, ى/ي, diacritics, "ال"). Filter by city, category, price and condition; sort by newest or price.
 - **Trust:** save favourites, report a listing, safety tips on every listing. Phone numbers and links are not allowed in listings. Prohibited items are blocked or sent to a moderator.
+- **Chat:** tap **Chat with seller** on a listing for a private 1:1 chat about that item. Messages arrive live (WebSocket, falling back to ordinary requests on poor networks), photos can be sent, and a red badge on **Chats** in the bottom bar shows unread messages. A message written with no signal waits on the phone and sends by itself when the connection is back.
+- **Offers:** on a negotiable listing the buyer can tap **Make an offer**; the seller taps **Accept** or **Decline**, and the buyer can withdraw it. An offer expires after 48 hours, and only one can be waiting at a time. (Buying at the agreed price comes in Phase 4.)
+- **Anti-fraud in chat:** phone numbers and links are replaced with `•••` before anyone sees them, and messages that suggest paying outside the app (Bankak, cash, WhatsApp…) show a warning to both people and are flagged for the fraud team. Safety tips stay at the top of every chat.
 - Arabic (right-to-left) by default, English at `/en`. Installable as an app (PWA), with an offline page.
 
 ---
@@ -41,6 +44,10 @@ No real SMS is sent. After you enter a phone number (e.g. `0912345678`), the cod
 
 - on the login screen itself, in a small yellow **DEV** box, and
 - in the terminal, on a line that says `mock SMS sent`.
+
+### Trying the chat with two people
+
+You need two accounts logged in at once. Open the app in a normal window and log in as the seller (post a listing), then open a **private/incognito window** (in Chrome: **⋮** menu → **New Incognito window**), paste the same address, and log in with a different phone number as the buyer. Open the listing and tap **كلّم البائع** (_Chat with seller_).
 
 ### Seeing it like a phone
 
@@ -92,10 +99,10 @@ Every decision is written to the audit log. The keyword list and categories live
 
 ```
 apps/
-  api/        Fastify API: login, sessions, profile, cities, media   (port 4000)
+  api/        Fastify API: login, profile, listings, chat, Socket.IO (port 4000)
   web/        Next.js app (PWA), Arabic-first                        (port 3000)
 packages/
-  domain/     Pure business rules (phone numbers, display names)
+  domain/     Pure business rules (phones, money, listing & offer states, masking)
   contracts/  Request/response schemas shared by web and API
   db/         Database schema, migrations, seed data
   i18n/       All user-facing text: messages/ar.json and messages/en.json

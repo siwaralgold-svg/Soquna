@@ -100,6 +100,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       .where(and(eq(sessions.id, id), eq(sessions.userId, auth.userId), isNull(sessions.revokedAt)))
       .returning({ id: sessions.id });
     if (revoked.length === 0) throw new AppError('not_found');
+    ctx.realtime?.endSessions([id]);
 
     await writeAudit(ctx, {
       actorId: auth.userId,
@@ -126,6 +127,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         ),
       )
       .returning({ id: sessions.id });
+    ctx.realtime?.endSessions(revoked.map((s) => s.id));
     await writeAudit(ctx, {
       actorId: auth.userId,
       actorRole: 'user',

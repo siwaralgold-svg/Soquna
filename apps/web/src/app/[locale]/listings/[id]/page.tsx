@@ -7,6 +7,7 @@ import { buttonClasses, Card } from '@/components/ui';
 import { Link } from '@/i18n/navigation';
 import { formatPrice, localName, photoSrcSet, photoUrl } from '@/lib/format';
 import { serverGet } from '@/lib/server-api';
+import { ChatActions } from './chat-actions';
 import { FavouriteButton } from './favourite-button';
 import { ReportForm } from './report-form';
 
@@ -173,14 +174,10 @@ export default async function ListingPage({ params }: Props) {
 
       {!listing.isOwner && listing.status === 'active' && (
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" disabled className={buttonClasses('secondary')}>
-              {t('listing.chatSeller')}
-            </button>
-            <button type="button" disabled className={buttonClasses('primary')}>
-              {t('listing.buy')}
-            </button>
-          </div>
+          <ChatActions listingId={listing.id} negotiable={listing.negotiable} />
+          <button type="button" disabled className={buttonClasses('secondary', 'w-full')}>
+            {t('listing.buy')}
+          </button>
           <p className="text-center text-sm text-ink-muted">{t('listing.comingSoon')}</p>
         </div>
       )}
