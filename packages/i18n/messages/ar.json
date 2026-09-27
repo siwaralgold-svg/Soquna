@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "title": "سوقنا",
+    "description": "بيع واشتري بأمان. قروشك محفوظة لحدي ما تستلم غرضك."
+  },
+  "common": {
+    "appName": "سوقنا",
+    "continue": "متابعة",
+    "save": "حفظ",
+    "saving": "جاري الحفظ…",
+    "saved": "اتحفظ",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "loading": "جاري التحميل…",
+    "retry": "حاول تاني",
+    "switchLanguage": "English",
+    "switchLanguageLabel": "تغيير اللغة إلى الإنجليزية"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "account": "حسابي",
+    "login": "دخول",
+    "main": "القائمة الرئيسية"
+  },
+  "home": {
+    "promiseTitle": "قروشك محفوظة لحدي ما تستلم",
+    "promiseBody": "بتدفع لينا ونحن بنحفظ القروش. البائع ما بيستلمها إلا لمن الغرض يصلك وتتأكد إنه زي ما اتفقتو.",
+    "stepsTitle": "كيف بتشتغل؟",
+    "step1": "اختار الغرض واتكلّم مع البائع جوّه التطبيق.",
+    "step2": "ادفع، وقروشك بتتحفظ عندنا.",
+    "step3": "استلم واتأكد، وبعدها القروش بتمشي للبائع.",
+    "comingSoon": "الإعلانات جاية قريب.",
+    "getStarted": "ابدأ الآن",
+    "goToAccount": "افتح حسابك"
+  },
+  "login": {
+    "title": "تسجيل الدخول",
+    "intro": "بندخلك برقم الموبايل. ما محتاج إيميل.",
+    "phoneLabel": "رقم الموبايل",
+    "phoneHint": "مثال: 0912345678. رقمك ما بيظهر لأي زول.",
+    "sendCode": "أرسل الرمز",
+    "sending": "جاري الإرسال…",
+    "codeTitle": "أدخل الرمز",
+    "codeSentTo": "رسلنا رمز من 6 أرقام للرقم {phone}",
+    "codeLabel": "الرمز",
+    "verify": "تأكيد",
+    "verifying": "جاري التأكيد…",
+    "resendIn": "تقدر تطلب رمز جديد بعد {seconds} ثانية",
+    "resend": "أرسل رمز جديد",
+    "changeNumber": "غيّر الرقم"
+  },
+  "onboarding": {
+    "title": "كمّل بياناتك",
+    "intro": "اسمك ومدينتك بيظهروا للناس في إعلاناتك.",
+    "displayNameLabel": "الاسم الظاهر",
+    "displayNameHint": "ما تكتب رقم تلفون أو رابط.",
+    "cityLabel": "المدينة",
+    "cityPlaceholder": "اختار مدينتك",
+    "neighbourhoodLabel": "الحي (اختياري)",
+    "neighbourhoodPlaceholder": "اختار الحي",
+    "submit": "حفظ ومتابعة"
+  },
+  "account": {
+    "title": "حسابي",
+    "profileSection": "الملف الشخصي",
+    "phoneLabel": "رقم الموبايل",
+    "phonePrivate": "رقمك ما بيظهر لأي زول.",
+    "avatarLabel": "الصورة الشخصية",
+    "avatarAlt": "صورتك الشخصية",
+    "changeAvatar": "غيّر الصورة",
+    "avatarUploading": "جاري رفع الصورة…",
+    "devicesSection": "الأجهزة اللي داخل منها",
+    "thisDevice": "الجهاز ده",
+    "unknownDevice": "جهاز غير معروف",
+    "lastSeen": "آخر نشاط: {date}",
+    "signOutDevice": "خروج",
+    "signOutOthers": "اطلع من كل الأجهزة التانية",
+    "signedOutOthers": "طلعناك من الأجهزة التانية.",
+    "logout": "تسجيل الخروج"
+  },
+  "validation": {
+    "invalid_phone": "الرقم ده ما رقم موبايل سوداني صحيح.",
+    "invalid_code": "الرمز لازم يكون 6 أرقام.",
+    "display_name_too_short": "الاسم قصير شديد.",
+    "display_name_too_long": "الاسم طويل شديد. الحد الأقصى 40 حرف.",
+    "display_name_contains_contact": "ما تكتب رقم تلفون أو رابط في الاسم.",
+    "display_name_invalid_chars": "الاسم فيه رموز غير مسموحة.",
+    "required": "الحقل ده مطلوب."
+  },
+  "errors": {
+    "validation_failed": "في بيانات ناقصة أو غلط. راجعها وحاول تاني.",
+    "unauthenticated": "لازم تسجّل الدخول أول.",
+    "forbidden": "ما عندك صلاحية للعملية دي.",
+    "not_found": "ما لقينا الحاجة المطلوبة.",
+    "csrf_failed": "الصفحة قديمة. حدّثها وحاول تاني.",
+    "rate_limited": "محاولات كتيرة. استنّى شوية وحاول تاني.",
+    "otp_invalid": "الرمز غلط. اتأكد منه وحاول تاني.",
+    "otp_expired": "الرمز انتهت صلاحيته. اطلب رمز جديد.",
+    "otp_too_many_attempts": "محاولات كتيرة بالرمز ده. اطلب رمز جديد.",
+    "account_suspended": "حسابك موقوف. تواصل مع الدعم.",
+    "upload_invalid": "الملف ده ما صورة صالحة. جرّب صورة JPG أو PNG أو WebP.",
+    "upload_too_large": "الصورة كبيرة شديد. الحد الأقصى 5 ميقابايت.",
+    "internal_error": "حصلت مشكلة عندنا. حاول تاني بعد شوية.",
+    "network": "ما في اتصال. اتأكد من الشبكة وحاول تاني."
+  },
+  "offline": {
+    "title": "ما في إنترنت",
+    "body": "اتأكد من الشبكة وحاول تاني."
+  },
+  "notFound": {
+    "title": "الصفحة دي ما موجودة",
+    "backHome": "ارجع للرئيسية"
+  },
+  "server": {
+    "otpSms": "سوقنا: رمز الدخول {code}. ما تشاركه مع أي زول. صالح لمدة 5 دقائق."
+  }
+}

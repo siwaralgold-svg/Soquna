@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+node_modules
+dist
+.next
+coverage
+packages/db/migrations/meta
+apps/web/test-results
+apps/web/playwright-report
+PROMPT.md
+CLAUDE.md
+apps/web/public/offline.html

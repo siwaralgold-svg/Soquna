@@ -1,0 +1,42 @@
+# Services for GitHub Codespaces. The app runs in the `app` container; Postgres, Redis and
+# MinIO run next to it and are reachable by name (postgres, redis, minio).
+# These credentials are for the throwaway development database only.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: souqna
+      POSTGRES_PASSWORD: souqna
+      POSTGRES_DB: souqna
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: souqna
+      # Development-only; matches S3_SECRET_ACCESS_KEY in .env.example.
+      MINIO_ROOT_PASSWORD: souqna-dev-only
+    volumes:
+      - minio-data:/data
+
+volumes:
+  postgres-data:
+  minio-data:

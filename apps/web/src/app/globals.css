@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Every colour, radius and font used in the UI comes from here, so the
+ * look can be changed in one place. Tailwind turns each token into utilities
+ * (e.g. --color-brand-600 → bg-brand-600, text-brand-600).
+ */
+@theme {
+  /* Brand: deep Nile green (trust, money kept safe). */
+  --color-brand-50: #eefbf6;
+  --color-brand-100: #d5f4e7;
+  --color-brand-200: #aee8d2;
+  --color-brand-500: #1f9d74;
+  --color-brand-600: #137e5d;
+  --color-brand-700: #0f654b;
+  --color-brand-800: #0d503d;
+
+  /* Accent: warm sand/amber, for highlights. */
+  --color-accent-100: #fdf1dc;
+  --color-accent-500: #d98a1c;
+  --color-accent-700: #9a5d0f;
+
+  /* Neutrals: slightly warm greys. */
+  --color-surface: #ffffff;
+  --color-canvas: #faf8f5;
+  --color-line: #e7e2da;
+  --color-ink: #1d1b18;
+  --color-ink-muted: #5f5a52;
+
+  --color-danger-50: #fdf0ef;
+  --color-danger-600: #c0342b;
+  --color-success-50: #eefbf3;
+  --color-success-700: #17693a;
+
+  /*
+   * System fonts only: no web-font download on slow, expensive networks. Android ships
+   * Noto Naskh/Sans Arabic; iOS and desktop have good Arabic system fonts.
+   */
+  --font-sans:
+    system-ui, 'Noto Sans Arabic', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, 'Geeza Pro', Roboto,
+    Arial, sans-serif;
+
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    line-height: 1.6;
+  }
+
+  /* Arabic text needs a little more room than Latin. */
+  :lang(ar) body {
+    line-height: 1.8;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}

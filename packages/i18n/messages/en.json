@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "title": "Souqna",
+    "description": "Buy and sell safely. Your money is held until you receive your item."
+  },
+  "common": {
+    "appName": "Souqna",
+    "continue": "Continue",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "switchLanguage": "العربية",
+    "switchLanguageLabel": "Switch language to Arabic"
+  },
+  "nav": {
+    "home": "Home",
+    "account": "My account",
+    "login": "Log in",
+    "main": "Main menu"
+  },
+  "home": {
+    "promiseTitle": "Your money is safe until you receive your item",
+    "promiseBody": "You pay us and we hold the money. The seller only gets it once the item reaches you and it's what you agreed.",
+    "stepsTitle": "How it works",
+    "step1": "Pick an item and chat with the seller in the app.",
+    "step2": "Pay, and we hold your money safely.",
+    "step3": "Receive and check the item, then the money goes to the seller.",
+    "comingSoon": "Listings are coming soon.",
+    "getStarted": "Get started",
+    "goToAccount": "Open your account"
+  },
+  "login": {
+    "title": "Log in",
+    "intro": "Log in with your mobile number. No email needed.",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "Example: 0912345678. Your number is never shown to anyone.",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "codeTitle": "Enter the code",
+    "codeSentTo": "We sent a 6-digit code to {phone}",
+    "codeLabel": "Code",
+    "verify": "Confirm",
+    "verifying": "Confirming…",
+    "resendIn": "You can request a new code in {seconds} seconds",
+    "resend": "Send a new code",
+    "changeNumber": "Change number"
+  },
+  "onboarding": {
+    "title": "Complete your profile",
+    "intro": "Your name and city are shown to people on your listings.",
+    "displayNameLabel": "Display name",
+    "displayNameHint": "Don't include a phone number or link.",
+    "cityLabel": "City",
+    "cityPlaceholder": "Choose your city",
+    "neighbourhoodLabel": "Neighbourhood (optional)",
+    "neighbourhoodPlaceholder": "Choose a neighbourhood",
+    "submit": "Save and continue"
+  },
+  "account": {
+    "title": "My account",
+    "profileSection": "Profile",
+    "phoneLabel": "Mobile number",
+    "phonePrivate": "Your number is never shown to anyone.",
+    "avatarLabel": "Profile photo",
+    "avatarAlt": "Your profile photo",
+    "changeAvatar": "Change photo",
+    "avatarUploading": "Uploading photo…",
+    "devicesSection": "Devices you're logged in on",
+    "thisDevice": "This device",
+    "unknownDevice": "Unknown device",
+    "lastSeen": "Last active: {date}",
+    "signOutDevice": "Log out",
+    "signOutOthers": "Log out of all other devices",
+    "signedOutOthers": "You've been logged out of your other devices.",
+    "logout": "Log out"
+  },
+  "validation": {
+    "invalid_phone": "This isn't a valid Sudanese mobile number.",
+    "invalid_code": "The code must be 6 digits.",
+    "display_name_too_short": "The name is too short.",
+    "display_name_too_long": "The name is too long. Maximum 40 characters.",
+    "display_name_contains_contact": "Don't include a phone number or link in your name.",
+    "display_name_invalid_chars": "The name contains characters that aren't allowed.",
+    "required": "This field is required."
+  },
+  "errors": {
+    "validation_failed": "Some details are missing or wrong. Check them and try again.",
+    "unauthenticated": "Please log in first.",
+    "forbidden": "You don't have permission to do that.",
+    "not_found": "We couldn't find that.",
+    "csrf_failed": "This page is out of date. Refresh it and try again.",
+    "rate_limited": "Too many attempts. Wait a little and try again.",
+    "otp_invalid": "That code is wrong. Check it and try again.",
+    "otp_expired": "That code has expired. Request a new one.",
+    "otp_too_many_attempts": "Too many attempts with this code. Request a new one.",
+    "account_suspended": "Your account is suspended. Contact support.",
+    "upload_invalid": "That file isn't a valid image. Try a JPG, PNG or WebP photo.",
+    "upload_too_large": "That photo is too large. The limit is 5 MB.",
+    "internal_error": "Something went wrong on our side. Try again shortly.",
+    "network": "No connection. Check your network and try again."
+  },
+  "offline": {
+    "title": "You're offline",
+    "body": "Check your connection and try again."
+  },
+  "notFound": {
+    "title": "This page doesn't exist",
+    "backHome": "Back to home"
+  },
+  "server": {
+    "otpSms": "Souqna: your login code is {code}. Don't share it with anyone. Valid for 5 minutes."
+  }
+}

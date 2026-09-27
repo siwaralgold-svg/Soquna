@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.next/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# env files hold real secrets; only .env.example is committed
+.env
+.env.*
+!.env.example
+
+# playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+
+.DS_Store
+*.log
+
+# local Redis snapshots
+*.rdb

@@ -1,0 +1,17 @@
+{
+  "name": "@souqna/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@souqna/domain": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}
