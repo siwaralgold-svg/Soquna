@@ -1,6 +1,6 @@
 # Phase 0 — Plan
 
-Status: **awaiting approval**. No application code has been written.
+Status: **approved** (open questions: suggested defaults accepted for now).
 
 This document answers PROMPT.md §6 Phase 0:
 
@@ -18,24 +18,24 @@ This document answers PROMPT.md §6 Phase 0:
 
 I kept most of the suggested stack. Where I chose between options, or changed something, the reason is given.
 
-| Layer | Choice | Why |
-|---|---|---|
-| Language | **TypeScript** everywhere, Node.js 22 LTS | One language for the web app, API, workers, and shared domain code. |
-| Monorepo | **pnpm workspaces** | The web app, API, and worker all share the state machine, ledger, and validation schemas. pnpm is fast and saves disk space in Codespaces. |
-| Web app | **Next.js (App Router) + Tailwind CSS**, as a PWA | Server Components ship very little JS, which helps the under-200 KB target. Tailwind's logical properties (`ms-*`, `pe-*`, `start-*`) make RTL work without writing layouts twice. CI will fail the build if the first-load JS is over budget. |
-| API | **Separate Fastify service** (not Next.js route handlers) | See below. |
-| Validation | **Zod**, shared between web and API | One schema per endpoint, used for both request validation and TypeScript types. |
-| Database | **PostgreSQL 16** | Transactions, row locks (`SELECT … FOR UPDATE`), check constraints, triggers, and full-text search, all in one place. |
-| DB access | **Drizzle ORM** + hand-written SQL migrations | See below. |
-| Cache/queues | **Redis** + **BullMQ** | Rate limits, OTP throttling, job queues, and the Socket.IO adapter. |
-| Realtime | **Socket.IO** | It falls back to HTTP long-polling on its own when WebSockets are blocked. That covers the "polling fallback" requirement without extra work. |
-| File storage | S3-compatible: **MinIO** in development, **Cloudflare R2** in production | R2 has no download (egress) fees and sits behind Cloudflare's CDN, which we need anyway. |
-| Images | Browser-side compression before upload, then **sharp** on the server | The server always re-encodes to WebP/AVIF, which also removes EXIF/GPS data. It makes 3 sizes (320, 800, 1280 px). |
-| i18n | **next-intl**, Arabic default, English second | Message files live in `packages/i18n`, so the API and workers (SMS text, notifications) use the same files. |
-| Auth | **Own implementation**: phone + OTP, database sessions | See below. |
-| Admin 2FA | TOTP (`otplib`) | Works with Google Authenticator and similar apps. |
-| Tests | **Vitest** (unit/integration), **Playwright** (E2E + RTL screenshot check at 360 px) | Coverage gate: 100% on `packages/domain` (state machine, ledger, fees). |
-| CI | GitHub Actions + CodeQL + Dependabot + secret scanning | As required in §7. |
+| Layer        | Choice                                                                               | Why                                                                                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Language     | **TypeScript** everywhere, Node.js 22 LTS                                            | One language for the web app, API, workers, and shared domain code.                                                                                                                                                                            |
+| Monorepo     | **pnpm workspaces**                                                                  | The web app, API, and worker all share the state machine, ledger, and validation schemas. pnpm is fast and saves disk space in Codespaces.                                                                                                     |
+| Web app      | **Next.js (App Router) + Tailwind CSS**, as a PWA                                    | Server Components ship very little JS, which helps the under-200 KB target. Tailwind's logical properties (`ms-*`, `pe-*`, `start-*`) make RTL work without writing layouts twice. CI will fail the build if the first-load JS is over budget. |
+| API          | **Separate Fastify service** (not Next.js route handlers)                            | See below.                                                                                                                                                                                                                                     |
+| Validation   | **Zod**, shared between web and API                                                  | One schema per endpoint, used for both request validation and TypeScript types.                                                                                                                                                                |
+| Database     | **PostgreSQL 16**                                                                    | Transactions, row locks (`SELECT … FOR UPDATE`), check constraints, triggers, and full-text search, all in one place.                                                                                                                          |
+| DB access    | **Drizzle ORM** + hand-written SQL migrations                                        | See below.                                                                                                                                                                                                                                     |
+| Cache/queues | **Redis** + **BullMQ**                                                               | Rate limits, OTP throttling, job queues, and the Socket.IO adapter.                                                                                                                                                                            |
+| Realtime     | **Socket.IO**                                                                        | It falls back to HTTP long-polling on its own when WebSockets are blocked. That covers the "polling fallback" requirement without extra work.                                                                                                  |
+| File storage | S3-compatible: **MinIO** in development, **Cloudflare R2** in production             | R2 has no download (egress) fees and sits behind Cloudflare's CDN, which we need anyway.                                                                                                                                                       |
+| Images       | Browser-side compression before upload, then **sharp** on the server                 | The server always re-encodes to WebP/AVIF, which also removes EXIF/GPS data. It makes 3 sizes (320, 800, 1280 px).                                                                                                                             |
+| i18n         | **next-intl**, Arabic default, English second                                        | Message files live in `packages/i18n`, so the API and workers (SMS text, notifications) use the same files.                                                                                                                                    |
+| Auth         | **Own implementation**: phone + OTP, database sessions                               | See below.                                                                                                                                                                                                                                     |
+| Admin 2FA    | TOTP (`otplib`)                                                                      | Works with Google Authenticator and similar apps.                                                                                                                                                                                              |
+| Tests        | **Vitest** (unit/integration), **Playwright** (E2E + RTL screenshot check at 360 px) | Coverage gate: 100% on `packages/domain` (state machine, ledger, fees).                                                                                                                                                                        |
+| CI           | GitHub Actions + CodeQL + Dependabot + secret scanning                               | As required in §7.                                                                                                                                                                                                                             |
 
 ### Why a separate Fastify API instead of Next.js route handlers
 
@@ -536,39 +536,39 @@ stateDiagram-v2
 
 **Transition table** (this becomes the test matrix: every row is tested, and every pair not in the table is tested as rejected):
 
-| # | From | To | Who | Guard | Side effects |
-|---|---|---|---|---|---|
-| 1 | — | CREATED | buyer | listing ACTIVE; buyer ≠ seller; new-account limits; price from listing or accepted offer | listing → RESERVED; fee snapshot; `payment_due_at` set |
-| 2 | CREATED | AWAITING_PAYMENT | buyer | method = bank transfer | show platform account + order reference |
-| 3 | CREATED | READY_FOR_PICKUP | seller | method = COD; delivery = courier; buyer eligible for COD | `handover_due_at` set; queue for courier assignment |
-| 4 | CREATED, AWAITING_PAYMENT, PAYMENT_REJECTED | CANCELLED | buyer / system | no money received | listing → ACTIVE |
-| 5 | AWAITING_PAYMENT, PAYMENT_REJECTED | PAYMENT_SUBMITTED | buyer | reference not already used; attempt limit | payment row `submitted` |
-| 6 | PAYMENT_SUBMITTED | FUNDS_HELD | finance/admin (2FA) or PSP webhook | amount = order total | ledger **L1**; `handover_due_at` set |
-| 7 | PAYMENT_SUBMITTED | PAYMENT_REJECTED | finance/admin (2FA) | reason required | notify buyer |
-| 8 | FUNDS_HELD | READY_FOR_PICKUP | seller | — | queue for courier assignment (if courier) |
-| 9 | FUNDS_HELD, READY_FOR_PICKUP | CANCELLED | buyer / seller / admin | not yet picked up | ledger **L7** if money held; listing → ACTIVE; seller-cancel counts against seller |
-| 10 | FUNDS_HELD, READY_FOR_PICKUP | EXPIRED | system | `handover_due_at` passed | ledger **L7** if money held; listing → PAUSED |
-| 11 | READY_FOR_PICKUP | PICKED_UP | assigned courier | pickup photo uploaded | pickup address hidden from courier |
-| 12 | READY_FOR_PICKUP | OUT_FOR_DELIVERY | seller | delivery = seller-arranged; tracking ref | — |
-| 13 | READY_FOR_PICKUP | DELIVERED | seller | delivery = meetup; correct buyer code | `inspection_ends_at` set |
-| 14 | PICKED_UP | OUT_FOR_DELIVERY | assigned courier | — | — |
-| 15 | OUT_FOR_DELIVERY | DELIVERED | assigned courier, or buyer for seller-arranged | correct code (max 5 tries, then locked + admin alert); COD: cash collected | COD: ledger **L2**; ledger **L4**; drop-off address hidden; `inspection_ends_at` set |
-| 16 | PICKED_UP, OUT_FOR_DELIVERY | DELIVERY_FAILED | assigned courier | reason required | notify buyer + seller |
-| 17 | DELIVERY_FAILED | OUT_FOR_DELIVERY | courier / admin | attempts < limit | — |
-| 18 | DELIVERY_FAILED | CANCELLED | admin | seller confirms item returned | ledger **L7** (minus delivery fee, see open questions); listing → ACTIVE |
-| 19 | DELIVERED | COMPLETED | buyer / system | no dispute; window open (buyer) or ended (system) | ledger **L5**; listing → SOLD; ratings unlocked |
-| 20 | DELIVERED | DISPUTED | buyer | inside inspection window; reason + photos | timers paused |
-| 21 | DISPUTED | RESOLVED_REFUND | admin (2FA) | decision note | ledger **L7** (+ return arrangement); listing → PAUSED |
-| 22 | DISPUTED | RESOLVED_PARTIAL | admin (2FA) | 0 < refund < item price | ledger **L8** |
-| 23 | DISPUTED | RESOLVED_RELEASE | admin (2FA) / buyer withdraws | — | ledger **L5**; listing → SOLD |
-| 24 | COMPLETED, RESOLVED_PARTIAL, RESOLVED_RELEASE | PAYOUT_RELEASED | system | `payout_hold_until` passed; no open fraud flag | ledger **L6** |
+| #   | From                                          | To                | Who                                            | Guard                                                                                    | Side effects                                                                         |
+| --- | --------------------------------------------- | ----------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1   | —                                             | CREATED           | buyer                                          | listing ACTIVE; buyer ≠ seller; new-account limits; price from listing or accepted offer | listing → RESERVED; fee snapshot; `payment_due_at` set                               |
+| 2   | CREATED                                       | AWAITING_PAYMENT  | buyer                                          | method = bank transfer                                                                   | show platform account + order reference                                              |
+| 3   | CREATED                                       | READY_FOR_PICKUP  | seller                                         | method = COD; delivery = courier; buyer eligible for COD                                 | `handover_due_at` set; queue for courier assignment                                  |
+| 4   | CREATED, AWAITING_PAYMENT, PAYMENT_REJECTED   | CANCELLED         | buyer / system                                 | no money received                                                                        | listing → ACTIVE                                                                     |
+| 5   | AWAITING_PAYMENT, PAYMENT_REJECTED            | PAYMENT_SUBMITTED | buyer                                          | reference not already used; attempt limit                                                | payment row `submitted`                                                              |
+| 6   | PAYMENT_SUBMITTED                             | FUNDS_HELD        | finance/admin (2FA) or PSP webhook             | amount = order total                                                                     | ledger **L1**; `handover_due_at` set                                                 |
+| 7   | PAYMENT_SUBMITTED                             | PAYMENT_REJECTED  | finance/admin (2FA)                            | reason required                                                                          | notify buyer                                                                         |
+| 8   | FUNDS_HELD                                    | READY_FOR_PICKUP  | seller                                         | —                                                                                        | queue for courier assignment (if courier)                                            |
+| 9   | FUNDS_HELD, READY_FOR_PICKUP                  | CANCELLED         | buyer / seller / admin                         | not yet picked up                                                                        | ledger **L7** if money held; listing → ACTIVE; seller-cancel counts against seller   |
+| 10  | FUNDS_HELD, READY_FOR_PICKUP                  | EXPIRED           | system                                         | `handover_due_at` passed                                                                 | ledger **L7** if money held; listing → PAUSED                                        |
+| 11  | READY_FOR_PICKUP                              | PICKED_UP         | assigned courier                               | pickup photo uploaded                                                                    | pickup address hidden from courier                                                   |
+| 12  | READY_FOR_PICKUP                              | OUT_FOR_DELIVERY  | seller                                         | delivery = seller-arranged; tracking ref                                                 | —                                                                                    |
+| 13  | READY_FOR_PICKUP                              | DELIVERED         | seller                                         | delivery = meetup; correct buyer code                                                    | `inspection_ends_at` set                                                             |
+| 14  | PICKED_UP                                     | OUT_FOR_DELIVERY  | assigned courier                               | —                                                                                        | —                                                                                    |
+| 15  | OUT_FOR_DELIVERY                              | DELIVERED         | assigned courier, or buyer for seller-arranged | correct code (max 5 tries, then locked + admin alert); COD: cash collected               | COD: ledger **L2**; ledger **L4**; drop-off address hidden; `inspection_ends_at` set |
+| 16  | PICKED_UP, OUT_FOR_DELIVERY                   | DELIVERY_FAILED   | assigned courier                               | reason required                                                                          | notify buyer + seller                                                                |
+| 17  | DELIVERY_FAILED                               | OUT_FOR_DELIVERY  | courier / admin                                | attempts < limit                                                                         | —                                                                                    |
+| 18  | DELIVERY_FAILED                               | CANCELLED         | admin                                          | seller confirms item returned                                                            | ledger **L7** (minus delivery fee, see open questions); listing → ACTIVE             |
+| 19  | DELIVERED                                     | COMPLETED         | buyer / system                                 | no dispute; window open (buyer) or ended (system)                                        | ledger **L5**; listing → SOLD; ratings unlocked                                      |
+| 20  | DELIVERED                                     | DISPUTED          | buyer                                          | inside inspection window; reason + photos                                                | timers paused                                                                        |
+| 21  | DISPUTED                                      | RESOLVED_REFUND   | admin (2FA)                                    | decision note                                                                            | ledger **L7** (+ return arrangement); listing → PAUSED                               |
+| 22  | DISPUTED                                      | RESOLVED_PARTIAL  | admin (2FA)                                    | 0 < refund < item price                                                                  | ledger **L8**                                                                        |
+| 23  | DISPUTED                                      | RESOLVED_RELEASE  | admin (2FA) / buyer withdraws                  | —                                                                                        | ledger **L5**; listing → SOLD                                                        |
+| 24  | COMPLETED, RESOLVED_PARTIAL, RESOLVED_RELEASE | PAYOUT_RELEASED   | system                                         | `payout_hold_until` passed; no open fraud flag                                           | ledger **L6**                                                                        |
 
 Notes:
 
 - **COD path:** the seller prepares the item before any money exists, so COD is limited to buyers with a good history and below a value cap (anti-fraud). The courier must record "cash collected" before entering the code, and both happen in one transition.
 - **Meetup** requires prepayment by bank transfer (cash at a meetup would bypass escrow).
 - A payment under review (`PAYMENT_SUBMITTED`) cannot be cancelled by the buyer, because the money may already be in our account. Finance must verify or reject it first.
-- **`PAYOUT_RELEASED`** means the money moved from the seller's *pending* balance to their *withdrawable* balance. For established sellers the hold is 0, so it happens straight after completion. For new sellers it waits N days. The actual bank transfer is a separate **payout** (3c).
+- **`PAYOUT_RELEASED`** means the money moved from the seller's _pending_ balance to their _withdrawable_ balance. For established sellers the hold is 0, so it happens straight after completion. For new sellers it waits N days. The actual bank transfer is a separate **payout** (3c).
 
 ### Timers
 
@@ -625,36 +625,36 @@ Standard double-entry bookkeeping. Every movement of money is one **ledger trans
 
 From PROMPT.md, plus four I added (marked ✚) because the flow needs them:
 
-| Account | Meaning |
-|---|---|
-| `platform_bank` ✚ | Mirrors the real Bankak/bank account(s), ideally held by a licensed partner. Reconciled against bank statements. |
-| `buyer_payments_clearing` | Money received that is not yet matched to an order (wrong amount, overpayment). Usually zero. |
-| `escrow_held` | Buyer money held for active orders. |
-| `platform_fees` | Our revenue (buyer-protection fees). |
-| `seller_pending:{id}` ✚ | Seller's earnings from completed orders that are still in the new-seller hold. |
-| `seller_balance:{id}` | Seller's withdrawable balance. |
-| `payouts_in_flight` ✚ | Approved payouts not yet transferred. |
-| `courier_cash:{id}` | COD cash a courier has collected and not yet handed in. |
-| `courier_earnings:{id}` ✚ | Delivery fees we owe a courier. |
-| `refunds` | Refunds we owe buyers, not yet transferred. |
+| Account                   | Meaning                                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `platform_bank` ✚         | Mirrors the real Bankak/bank account(s), ideally held by a licensed partner. Reconciled against bank statements. |
+| `buyer_payments_clearing` | Money received that is not yet matched to an order (wrong amount, overpayment). Usually zero.                    |
+| `escrow_held`             | Buyer money held for active orders.                                                                              |
+| `platform_fees`           | Our revenue (buyer-protection fees).                                                                             |
+| `seller_pending:{id}` ✚   | Seller's earnings from completed orders that are still in the new-seller hold.                                   |
+| `seller_balance:{id}`     | Seller's withdrawable balance.                                                                                   |
+| `payouts_in_flight` ✚     | Approved payouts not yet transferred.                                                                            |
+| `courier_cash:{id}`       | COD cash a courier has collected and not yet handed in.                                                          |
+| `courier_earnings:{id}` ✚ | Delivery fees we owe a courier.                                                                                  |
+| `refunds`                 | Refunds we owe buyers, not yet transferred.                                                                      |
 
 ### Postings
 
 T = order total, P = item price, D = delivery fee, F = buyer-protection fee, r = partial refund.
 
-| Code | Event | Debit | Credit |
-|---|---|---|---|
-| L1 | Bank transfer verified | `platform_bank` T | `escrow_held` T |
-| L2 | COD cash collected at the door | `courier_cash:{c}` T | `escrow_held` T |
-| L3 | Courier hands in COD cash | `platform_bank` x | `courier_cash:{c}` x |
-| L4 | Item delivered by platform courier | `escrow_held` D | `courier_earnings:{c}` D |
-| L5 | Order completed / released | `escrow_held` P+F | `seller_pending:{s}` P, `platform_fees` F |
-| L6 | Seller hold ends | `seller_pending:{s}` P | `seller_balance:{s}` P |
-| L7 | Refund (cancel, expiry, dispute) | `escrow_held` (what's held) | `refunds` (same) |
-| L8 | Partial refund decision | `escrow_held` P+F | `refunds` r, `seller_pending:{s}` P−r, `platform_fees` F |
-| L9 | Payout approved | `seller_balance:{s}` / `refunds` / `courier_earnings:{c}` | `payouts_in_flight` |
-| L10 | Payout paid (bank ref entered) | `payouts_in_flight` | `platform_bank` |
-| L11 | Payout rejected | `payouts_in_flight` | back to the source account |
+| Code | Event                              | Debit                                                     | Credit                                                   |
+| ---- | ---------------------------------- | --------------------------------------------------------- | -------------------------------------------------------- |
+| L1   | Bank transfer verified             | `platform_bank` T                                         | `escrow_held` T                                          |
+| L2   | COD cash collected at the door     | `courier_cash:{c}` T                                      | `escrow_held` T                                          |
+| L3   | Courier hands in COD cash          | `platform_bank` x                                         | `courier_cash:{c}` x                                     |
+| L4   | Item delivered by platform courier | `escrow_held` D                                           | `courier_earnings:{c}` D                                 |
+| L5   | Order completed / released         | `escrow_held` P+F                                         | `seller_pending:{s}` P, `platform_fees` F                |
+| L6   | Seller hold ends                   | `seller_pending:{s}` P                                    | `seller_balance:{s}` P                                   |
+| L7   | Refund (cancel, expiry, dispute)   | `escrow_held` (what's held)                               | `refunds` (same)                                         |
+| L8   | Partial refund decision            | `escrow_held` P+F                                         | `refunds` r, `seller_pending:{s}` P−r, `platform_fees` F |
+| L9   | Payout approved                    | `seller_balance:{s}` / `refunds` / `courier_earnings:{c}` | `payouts_in_flight`                                      |
+| L10  | Payout paid (bank ref entered)     | `payouts_in_flight`                                       | `platform_bank`                                          |
+| L11  | Payout rejected                    | `payouts_in_flight`                                       | back to the source account                               |
 
 Before L9 the service locks the seller's account row and checks that the balance covers the amount, so a seller can't withdraw the same money twice.
 
@@ -733,25 +733,25 @@ Exact click-by-click steps ("Code" button → "Codespaces" tab → …) will be 
 
 ## 7. Open questions
 
-I've suggested a default for each so you can reply "defaults OK" to any you don't want to decide now. Everything marked *(config)* is an admin setting and can change later without code.
+I've suggested a default for each so you can reply "defaults OK" to any you don't want to decide now. Everything marked _(config)_ is an admin setting and can change later without code.
 
 ### Legal and money
 
-1. **Central Bank of Sudan licence.** I've assumed a licensed bank or PSP must hold the escrow money, and the design allows the "platform bank account" to be the partner's account. Do you already have a partner bank in mind (e.g. Bank of Khartoum for Bankak)? *This is the biggest launch risk and needs a Sudanese lawyer's opinion.*
-2. **Buyer-protection fee** *(config)*: I propose fixed + % with a cap, and **no seller fee** (like Vinted). What numbers? Because of inflation I'd rather you set them than I guess.
+1. **Central Bank of Sudan licence.** I've assumed a licensed bank or PSP must hold the escrow money, and the design allows the "platform bank account" to be the partner's account. Do you already have a partner bank in mind (e.g. Bank of Khartoum for Bankak)? _This is the biggest launch risk and needs a Sudanese lawyer's opinion._
+2. **Buyer-protection fee** _(config)_: I propose fixed + % with a cap, and **no seller fee** (like Vinted). What numbers? Because of inflation I'd rather you set them than I guess.
 3. **Refund of fees on cancellation:** default is a full refund (including the protection fee) whenever the buyer isn't at fault. If the buyer cancels after paying, should we keep the protection fee?
 4. **Failed delivery:** if the buyer can't be reached or refuses the item, does the buyer lose the delivery fee? Default: yes, after 2 attempts.
-5. **New-seller payout hold** *(config)*: default 7 days for a seller's first 3 completed orders, then 0.
+5. **New-seller payout hold** _(config)_: default 7 days for a seller's first 3 completed orders, then 0.
 6. **Minimum payout amount** and how often sellers can request a payout? Default: no minimum, one open request at a time.
 
 ### Operations
 
 7. **Launch city.** One city to start. Which one (e.g. Port Sudan)?
-8. **Timers** *(config)*: payment deadline 24 h (bank apps go down), seller hand-over 3 days, inspection window 48 h. OK?
+8. **Timers** _(config)_: payment deadline 24 h (bank apps go down), seller hand-over 3 days, inspection window 48 h. OK?
 9. **Who verifies manual payments, and when?** If it's only you, buyers may wait hours. Should the app show "verified within X hours, 9am–9pm"?
 10. **Courier partners at launch.** Any company or riders already lined up? Is courier assignment by an admin (manual) fine for the MVP?
 11. **Can couriers see the buyer's phone number** during an active delivery? Riders usually need to call. Default: yes, only while the delivery is active, hidden afterwards (same rule as the address).
-12. **COD limits** *(config)*: default COD only for buyers with ≥ 1 completed order and orders below a value cap. OK?
+12. **COD limits** _(config)_: default COD only for buyers with ≥ 1 completed order and orders below a value cap. OK?
 13. **Returns in disputes:** for a full refund, must the item go back to the seller first, and who pays the return delivery? Default: yes it goes back; the seller pays if the item was not as described.
 14. **Seller-arranged delivery:** default is that the buyer taps "I received it", and if they don't, admin follows up (no automatic completion). OK?
 

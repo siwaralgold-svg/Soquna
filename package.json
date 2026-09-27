@@ -1,0 +1,43 @@
+{
+  "name": "souqna",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup-env.mjs && pnpm db:migrate && pnpm db:seed",
+    "dev": "pnpm --parallel --filter @souqna/api --filter @souqna/web run dev",
+    "build": "pnpm -r run build",
+    "start": "pnpm --parallel --filter @souqna/api --filter @souqna/web run start",
+    "lint": "eslint . --max-warnings 0 && pnpm --filter @souqna/web lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "pnpm --filter @souqna/web run e2e",
+    "db:migrate": "pnpm --filter @souqna/db run migrate",
+    "db:seed": "pnpm --filter @souqna/db run seed",
+    "db:generate": "pnpm --filter @souqna/db run generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.20.4",
+    "@vitest/coverage-v8": "5.0.2",
+    "eslint": "^9.39.0",
+    "globals": "^17.0.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.0.0",
+    "vitest": "5.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

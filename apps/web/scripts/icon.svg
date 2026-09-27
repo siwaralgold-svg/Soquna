@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#137e5d"/>
+  <!-- bag handle -->
+  <path d="M196 196v-28a60 60 0 0 1 120 0v28" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <!-- bag body -->
+  <path d="M136 196h240l-18 188a32 32 0 0 1-32 29H186a32 32 0 0 1-32-29z" fill="#ffffff"/>
+  <!-- check mark: money held safely -->
+  <path d="M206 300l36 36 66-72" fill="none" stroke="#d98a1c" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
