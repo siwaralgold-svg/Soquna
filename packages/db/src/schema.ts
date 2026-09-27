@@ -1,8 +1,11 @@
+import { LISTING_CONDITIONS, LISTING_STATUSES } from '@souqna/domain';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
+  bigint,
   bigserial,
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -21,6 +24,10 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   dataType: () => 'bytea',
 });
 
+const tsvector = customType<{ data: string }>({
+  dataType: () => 'tsvector',
+});
+
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const tstz = (name: string) => timestamp(name, { withTimezone: true });
 
@@ -33,7 +40,7 @@ export const staffRole = pgEnum('staff_role', [
   'admin',
   'verifier',
 ]);
-export const mediaKind = pgEnum('media_kind', ['avatar']);
+export const mediaKind = pgEnum('media_kind', ['avatar', 'listing_photo']);
 export const mediaStatus = pgEnum('media_status', ['ready', 'deleted']);
 
 export const cities = pgTable('cities', {
@@ -146,6 +153,8 @@ export const media = pgTable('media', {
   width: integer('width').notNull(),
   height: integer('height').notNull(),
   sha256: bytea('sha256').notNull(),
+  /** Widths of the stored variants (listing photos: `${storageKey}/${width}.webp`). */
+  sizes: integer('sizes').array(),
   status: mediaStatus('status').notNull().default('ready'),
   createdAt: createdAt(),
 });
@@ -168,4 +177,155 @@ export const auditLog = pgTable(
     index('audit_log_actor_idx').on(t.actorId, t.createdAt),
     index('audit_log_target_idx').on(t.targetType, t.targetId),
   ],
+);
+
+export const listingStatus = pgEnum('listing_status', LISTING_STATUSES);
+export const listingCondition = pgEnum('listing_condition', LISTING_CONDITIONS);
+export const screenAction = pgEnum('screen_action', ['block', 'review']);
+export const reportReason = pgEnum('report_reason', [
+  'prohibited',
+  'scam',
+  'wrong_category',
+  'offensive',
+  'duplicate',
+  'other',
+]);
+export const reportStatus = pgEnum('report_status', ['open', 'actioned', 'dismissed']);
+
+/** Admin-editable category tree (two levels). */
+export const categories = pgTable(
+  'categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    parentId: uuid('parent_id').references((): AnyPgColumn => categories.id),
+    slug: text('slug').notNull().unique(),
+    nameAr: text('name_ar').notNull(),
+    nameEn: text('name_en').notNull(),
+    sortOrder: smallint('sort_order').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index('categories_parent_idx').on(t.parentId)],
+);
+
+export const listings = pgTable(
+  'listings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sellerId: uuid('seller_id')
+      .notNull()
+      .references(() => users.id),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    /** Integer minor units (piastres). Never a float. */
+    priceMinor: bigint('price_minor', { mode: 'bigint' }).notNull(),
+    negotiable: boolean('negotiable').notNull().default(false),
+    condition: listingCondition('condition').notNull(),
+    cityId: uuid('city_id')
+      .notNull()
+      .references(() => cities.id),
+    neighbourhoodId: uuid('neighbourhood_id').references(() => neighbourhoods.id),
+    status: listingStatus('status').notNull().default('draft'),
+    /** Moderator's reason for rejecting/removing; shown to the seller only. */
+    moderationNote: text('moderation_note'),
+    searchVector: tsvector('search_vector')
+      .notNull()
+      .generatedAlwaysAs(
+        sql`setweight(to_tsvector('simple', souqna_normalize(title)), 'A') || setweight(to_tsvector('simple', souqna_normalize(description)), 'B')`,
+      ),
+    version: integer('version').notNull().default(1),
+    publishedAt: tstz('published_at'),
+    createdAt: createdAt(),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('listings_seller_idx').on(t.sellerId, t.createdAt),
+    index('listings_public_idx').on(t.status, t.publishedAt),
+    index('listings_category_idx').on(t.categoryId),
+    index('listings_city_idx').on(t.cityId),
+    index('listings_price_idx').on(t.priceMinor),
+    index('listings_search_idx').using('gin', t.searchVector),
+    check('listings_price_positive', sql`${t.priceMinor} > 0`),
+  ],
+);
+
+export const listingPhotos = pgTable(
+  'listing_photos',
+  {
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    /** Unique: a photo belongs to exactly one listing. */
+    mediaId: uuid('media_id')
+      .notNull()
+      .unique()
+      .references(() => media.id),
+    position: smallint('position').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.listingId, t.mediaId] }),
+    uniqueIndex('listing_photos_position_uq').on(t.listingId, t.position),
+  ],
+);
+
+export const favourites = pgTable(
+  'favourites',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.listingId] })],
+);
+
+export const listingReports = pgTable(
+  'listing_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => users.id),
+    reason: reportReason('reason').notNull(),
+    note: text('note'),
+    status: reportStatus('status').notNull().default('open'),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex('listing_reports_once_uq').on(t.listingId, t.reporterId)],
+);
+
+/** Keyword pre-screen for the prohibited-items policy (admin-editable). */
+export const prohibitedTerms = pgTable('prohibited_terms', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  term: text('term').notNull().unique(),
+  action: screenAction('action').notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: createdAt(),
+});
+
+/** Stored responses for writes sent with an Idempotency-Key header. */
+export const idempotencyKeys = pgTable(
+  'idempotency_keys',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    key: text('key').notNull(),
+    route: text('route').notNull(),
+    requestHash: bytea('request_hash').notNull(),
+    statusCode: integer('status_code'),
+    response: jsonb('response'),
+    createdAt: createdAt(),
+    completedAt: tstz('completed_at'),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );

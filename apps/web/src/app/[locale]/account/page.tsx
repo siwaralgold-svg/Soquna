@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { DeviceList } from '@/components/device-list';
 import { ProfileForm } from '@/components/profile-form';
-import { Alert, Button, Card } from '@/components/ui';
-import { useRouter } from '@/i18n/navigation';
+import { Alert, Button, buttonClasses, Card } from '@/components/ui';
+import { Link, useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/api';
 import { compressImage } from '@/lib/compress-image';
 import { useErrorMessage } from '@/lib/use-error-message';
@@ -95,6 +95,15 @@ export default function AccountPage() {
         </Button>
         {avatarError && <Alert tone="error">{avatarError}</Alert>}
       </Card>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/my/listings" className={buttonClasses('secondary')}>
+          {t('myListings.title')}
+        </Link>
+        <Link href="/favourites" className={buttonClasses('secondary')}>
+          {t('favourites.title')}
+        </Link>
+      </div>
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold">{t('account.profileSection')}</h2>

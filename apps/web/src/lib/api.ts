@@ -24,10 +24,10 @@ export class ApiRequestError extends Error {
  */
 export async function api<T>(
   path: string,
-  init: { method?: string; json?: unknown; body?: BodyInit } = {},
+  init: { method?: string; json?: unknown; body?: BodyInit; headers?: Record<string, string> } = {},
 ): Promise<T> {
   const method = init.method ?? (init.json !== undefined || init.body ? 'POST' : 'GET');
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...init.headers };
   if (method !== 'GET') headers[CSRF_HEADER] = CSRF_HEADER_VALUE;
   if (init.json !== undefined) headers['content-type'] = 'application/json';
 

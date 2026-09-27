@@ -22,9 +22,33 @@ export const ERROR_CODES = [
   'account_suspended',
   'upload_invalid',
   'upload_too_large',
+  'conflict',
+  'idempotency_conflict',
+  'listing_prohibited',
+  'listing_limit_reached',
   'internal_error',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
+
+/** Header that makes a write safe to retry (see decision 007). */
+export const IDEMPOTENCY_HEADER = 'idempotency-key';
+
+/** Photo widths stored for every listing photo. */
+export const PHOTO_WIDTHS = [320, 800, 1280] as const;
+export type PhotoWidth = (typeof PHOTO_WIDTHS)[number];
+
+export const REPORT_REASONS = [
+  'prohibited',
+  'scam',
+  'wrong_category',
+  'offensive',
+  'duplicate',
+  'other',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export const LISTING_SORTS = ['relevance', 'newest', 'price_asc', 'price_desc'] as const;
+export type ListingSort = (typeof LISTING_SORTS)[number];
 
 export interface ApiError {
   error: ErrorCode;

@@ -13,6 +13,10 @@ const STATUS: Record<ErrorCode, number> = {
   otp_expired: 400,
   otp_too_many_attempts: 429,
   rate_limited: 429,
+  conflict: 409,
+  idempotency_conflict: 409,
+  listing_prohibited: 422,
+  listing_limit_reached: 403,
   internal_error: 500,
 };
 

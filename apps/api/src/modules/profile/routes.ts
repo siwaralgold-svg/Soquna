@@ -7,7 +7,8 @@ import type { AppContext } from '../../context';
 import { sha256 } from '../../lib/crypto';
 import { AppError } from '../../lib/errors';
 import { requireAuth } from '../auth/session';
-import { AVATAR_MAX_BYTES, processAvatar } from './avatar';
+import { IMAGE_UPLOAD_MAX_BYTES } from '../../lib/images';
+import { processAvatar } from './avatar';
 
 export function mediaUrl(id: string): string {
   return `/api/media/${id}`;
@@ -104,7 +105,7 @@ export async function profileRoutes(app: FastifyInstance): Promise<void> {
   app.post('/me/avatar', async (request) => {
     const auth = requireAuth(request);
     const file = await request.file({
-      limits: { fileSize: AVATAR_MAX_BYTES, files: 1, fields: 0 },
+      limits: { fileSize: IMAGE_UPLOAD_MAX_BYTES, files: 1, fields: 0 },
     });
     if (!file) throw new AppError('upload_invalid');
 

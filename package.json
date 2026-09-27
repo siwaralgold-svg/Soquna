@@ -20,7 +20,8 @@
     "e2e": "pnpm --filter @souqna/web run e2e",
     "db:migrate": "pnpm --filter @souqna/db run migrate",
     "db:seed": "pnpm --filter @souqna/db run seed",
-    "db:generate": "pnpm --filter @souqna/db run generate"
+    "db:generate": "pnpm --filter @souqna/db run generate",
+    "moderate": "pnpm --filter @souqna/api exec tsx src/scripts/moderate.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

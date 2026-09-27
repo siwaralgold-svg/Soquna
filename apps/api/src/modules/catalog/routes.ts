@@ -1,11 +1,19 @@
-import type { CitiesResponse } from '@souqna/contracts';
-import { cities, media, neighbourhoods } from '@souqna/db';
+import { PHOTO_WIDTHS, type CitiesResponse, type PhotoWidth } from '@souqna/contracts';
+import { cities, listingPhotos, listings, media, neighbourhoods } from '@souqna/db';
+import { isPubliclyVisible } from '@souqna/domain';
 import { and, asc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError } from '../../lib/errors';
+import { photoKey } from '../listings/photos';
 
 const mediaParams = z.object({ id: z.uuid() });
+const mediaQuery = z.object({
+  w: z.coerce
+    .number()
+    .refine((w): w is PhotoWidth => (PHOTO_WIDTHS as readonly number[]).includes(w))
+    .default(800),
+});
 
 export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   const { ctx } = app;
@@ -30,23 +38,50 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
     }));
   });
 
-  // Avatars are public (they appear next to listings). Other media kinds will get their own
-  // access policies when they are introduced; until then they are simply not served here.
-  app.get('/media/:id', async (request, reply) => {
-    const { id } = mediaParams.parse(request.params);
-    const [row] = await ctx.db
-      .select({ storageKey: media.storageKey, mime: media.mime })
-      .from(media)
-      .where(and(eq(media.id, id), eq(media.kind, 'avatar'), eq(media.status, 'ready')));
-    if (!row) throw new AppError('not_found');
+  // Who may see a picture:
+  //  - avatars: everyone (they appear next to listings);
+  //  - listing photos: everyone while the listing is public, otherwise only the seller
+  //    (drafts, listings under review, and photos not yet attached to a listing).
+  // Images get their own, higher limit: one page of listings loads ~20 of them.
+  app.get(
+    '/media/:id',
+    { config: { rateLimit: { max: 3000, timeWindow: 60_000 } } },
+    async (request, reply) => {
+      const { id } = mediaParams.parse(request.params);
+      const { w } = mediaQuery.parse(request.query);
+      const [row] = await ctx.db
+        .select({
+          kind: media.kind,
+          ownerId: media.ownerId,
+          storageKey: media.storageKey,
+          mime: media.mime,
+          listingStatus: listings.status,
+        })
+        .from(media)
+        .leftJoin(listingPhotos, eq(listingPhotos.mediaId, media.id))
+        .leftJoin(listings, eq(listings.id, listingPhotos.listingId))
+        .where(and(eq(media.id, id), eq(media.status, 'ready')));
+      if (!row) throw new AppError('not_found');
 
-    const object = await ctx.storage.get(row.storageKey);
-    if (!object) throw new AppError('not_found');
+      let key = row.storageKey;
+      let cacheControl = 'public, max-age=31536000, immutable';
+      if (row.kind === 'listing_photo') {
+        const isPublic = row.listingStatus !== null && isPubliclyVisible(row.listingStatus);
+        const isOwner = request.auth?.userId === row.ownerId;
+        if (!isPublic && !isOwner) throw new AppError('not_found');
+        key = photoKey(row.storageKey, w);
+        // Short public caching: a listing can be hidden later and its photos must follow.
+        cacheControl = isPublic ? 'public, max-age=3600' : 'private, no-store';
+      }
 
-    return reply
-      .header('content-type', row.mime)
-      .header('cache-control', 'public, max-age=31536000, immutable')
-      .header('cross-origin-resource-policy', 'same-site')
-      .send(object.body);
-  });
+      const object = await ctx.storage.get(key);
+      if (!object) throw new AppError('not_found');
+
+      return reply
+        .header('content-type', row.mime)
+        .header('cache-control', cacheControl)
+        .header('cross-origin-resource-policy', 'same-site')
+        .send(object.body);
+    },
+  );
 }

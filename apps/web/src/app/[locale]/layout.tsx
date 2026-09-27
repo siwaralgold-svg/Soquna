@@ -5,6 +5,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { routing } from '@/i18n/routing';
+import { BottomNav } from '@/components/bottom-nav';
 import { SiteHeader } from '@/components/site-header';
 import { ServiceWorker } from '@/components/service-worker';
 import '../globals.css';
@@ -48,7 +49,8 @@ export default async function LocaleLayout({
       <body className="min-h-dvh">
         <NextIntlClientProvider>
           <SiteHeader />
-          <main className="mx-auto w-full max-w-xl px-4 pb-16 pt-4">{children}</main>
+          <main className="mx-auto w-full max-w-xl px-4 pb-28 pt-4">{children}</main>
+          <BottomNav />
           <ServiceWorker />
         </NextIntlClientProvider>
       </body>

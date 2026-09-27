@@ -2,13 +2,16 @@
 
 A peer-to-peer marketplace for Sudan, built for small, everyday sellers. The platform holds the buyer's money (escrow) until the item is delivered and confirmed.
 
-**Status:** Phase 1 (Foundation) built and waiting for review. Plan: [`docs/plan/phase-0.md`](docs/plan/phase-0.md).
+**Status:** Phase 2 (Listings) built and waiting for review. Plan: [`docs/plan/phase-0.md`](docs/plan/phase-0.md).
 
 What works today:
 
 - Log in with a Sudanese mobile number and a 6-digit SMS code (a fake SMS provider in development).
 - Complete a profile: display name, city, optional neighbourhood, profile photo.
 - See the devices you're logged in on, log one out, or log out all the others.
+- **Sell:** post a listing with up to 8 photos (shrunk on the phone, location data removed), category, condition, price and city. The form is saved on the phone, so a lost connection or a closed tab doesn't lose work; photos taken offline upload when the signal comes back.
+- **Find:** home feed, category chips, and search in Arabic or English that copes with spelling variants (أ/إ/آ, ة/ه, ى/ي, diacritics, "ال"). Filter by city, category, price and condition; sort by newest or price.
+- **Trust:** save favourites, report a listing, safety tips on every listing. Phone numbers and links are not allowed in listings. Prohibited items are blocked or sent to a moderator.
 - Arabic (right-to-left) by default, English at `/en`. Installable as an app (PWA), with an offline page.
 
 ---
@@ -66,10 +69,24 @@ Run these in the Codespace terminal:
 | `pnpm db:seed`                    | Add/update the starting list of cities.                               |
 | `pnpm db:generate`                | Create a migration after changing `packages/db/src/schema.ts`.        |
 | `pnpm --filter @souqna/web icons` | Regenerate app icons from `apps/web/scripts/icon.svg`.                |
+| `pnpm moderate list`              | Show listings waiting for a moderator (see below).                    |
 
 Browser-test screenshots are saved under `apps/web/test-results/`. In CI they're attached to each run as the **playwright-report** artifact (open the run in the **Actions** tab → scroll to **Artifacts**).
 
 ---
+
+## Moderating listings (until the admin screens arrive)
+
+Listings that mention a "review" keyword (e.g. medicines, animals), or that get reports from 3 different people, are hidden until someone checks them. The admin screens with two-factor login come in Phase 6; until then, moderate from the Codespace terminal:
+
+```
+pnpm moderate list
+pnpm moderate approve <listing-id>
+pnpm moderate reject <listing-id> "reason the seller will see"
+pnpm moderate remove <listing-id> "reason the seller will see"
+```
+
+Every decision is written to the audit log. The keyword list and categories live in `packages/db/src/seed-data.ts`; after editing, run `pnpm db:seed`.
 
 ## Project layout
 

@@ -25,7 +25,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['packages/domain/src/**', 'apps/api/src/**'],
-      exclude: ['**/*.test.ts', 'apps/api/src/server.ts'],
+      exclude: ['**/*.test.ts', 'apps/api/src/server.ts', 'apps/api/src/scripts/**'],
+      thresholds: {
+        // Business rules (state machines, money, screening) must be fully tested.
+        'packages/domain/src/**': { statements: 100, branches: 100, functions: 100, lines: 100 },
+      },
     },
   },
 });

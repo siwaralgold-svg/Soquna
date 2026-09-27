@@ -6,6 +6,7 @@ import { authRoutes } from './modules/auth/routes';
 import { registerSessionHook } from './modules/auth/session';
 import { catalogRoutes } from './modules/catalog/routes';
 import { devRoutes } from './modules/dev/routes';
+import { listingRoutes } from './modules/listings/routes';
 import { profileRoutes } from './modules/profile/routes';
 import { registerErrorHandling } from './plugins/errors';
 import { registerSecurity } from './plugins/security';
@@ -60,6 +61,7 @@ export async function buildApp(
       await api.register(authRoutes);
       await api.register(profileRoutes);
       await api.register(catalogRoutes);
+      await api.register(listingRoutes);
       if (deps.config.NODE_ENV !== 'production') await api.register(devRoutes);
     },
     { prefix: '/api' },

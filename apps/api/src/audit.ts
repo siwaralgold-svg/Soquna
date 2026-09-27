@@ -1,5 +1,4 @@
-import { auditLog } from '@souqna/db';
-import type { AppContext } from './context';
+import { auditLog, type Database } from '@souqna/db';
 
 export interface AuditEntry {
   actorId: string | null;
@@ -12,14 +11,17 @@ export interface AuditEntry {
   metadata?: Record<string, unknown>;
 }
 
-export async function writeAudit(ctx: AppContext, entry: AuditEntry): Promise<void> {
+export async function writeAudit(
+  ctx: { db: Pick<Database, 'insert'>; hashIp?: (ip: string) => Buffer },
+  entry: AuditEntry,
+): Promise<void> {
   await ctx.db.insert(auditLog).values({
     actorId: entry.actorId,
     actorRole: entry.actorRole,
     action: entry.action,
     targetType: entry.targetType,
     targetId: entry.targetId,
-    ipHash: entry.ip ? ctx.hashIp(entry.ip) : undefined,
+    ipHash: entry.ip && ctx.hashIp ? ctx.hashIp(entry.ip) : undefined,
     metadata: entry.metadata ?? {},
   });
 }

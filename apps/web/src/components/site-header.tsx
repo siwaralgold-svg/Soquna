@@ -14,13 +14,13 @@ export function SiteHeader() {
           {t('common.appName')}
         </Link>
         <div className="flex items-center gap-1">
-          <LanguageSwitch />
           <Link
-            href="/account"
-            className="inline-flex min-h-11 items-center rounded-control px-3 font-medium text-brand-700 hover:bg-brand-50"
+            href="/prohibited"
+            className="inline-flex min-h-11 items-center rounded-control px-2 text-sm text-ink-muted hover:bg-canvas"
           >
-            {t('nav.account')}
+            {t('footer.prohibited')}
           </Link>
+          <LanguageSwitch />
         </div>
       </nav>
     </header>

@@ -1,5 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
+export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+
 /** Fails if the page is wider than the screen (a common RTL layout bug). */
 export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   const { scrollWidth, clientWidth } = await page.evaluate(() => ({
