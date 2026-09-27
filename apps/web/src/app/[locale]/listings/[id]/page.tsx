@@ -174,11 +174,11 @@ export default async function ListingPage({ params }: Props) {
 
       {!listing.isOwner && listing.status === 'active' && (
         <div className="space-y-2">
-          <ChatActions listingId={listing.id} negotiable={listing.negotiable} />
-          <button type="button" disabled className={buttonClasses('secondary', 'w-full')}>
+          <Link href={`/checkout/${listing.id}`} className={buttonClasses('primary', 'w-full')}>
+            <ShieldIcon width={20} height={20} />
             {t('listing.buy')}
-          </button>
-          <p className="text-center text-sm text-ink-muted">{t('listing.comingSoon')}</p>
+          </Link>
+          <ChatActions listingId={listing.id} negotiable={listing.negotiable} />
         </div>
       )}
 

@@ -164,3 +164,23 @@ export const SEED_PROHIBITED_TERMS: ReadonlyArray<{ term: string; action: 'block
   })),
   ...['دولار', 'عملة', 'تقليد', 'replica'].map((term) => ({ term, action: 'review' as const })),
 ];
+
+/**
+ * First checkout settings. PLACEHOLDER numbers until the owner decides (open questions 2, 5,
+ * 8, 12 in docs/plan/phase-0.md); change them by adding a new order_configs row.
+ * Amounts are in piastres (1 SDG = 100).
+ */
+export const SEED_ORDER_CONFIG = {
+  protectionFixedMinor: 1_000_00n, // 1,000 SDG
+  protectionPctBps: 500, // + 5 % of the item price
+  protectionCapMinor: 25_000_00n, // at most 25,000 SDG
+  courierFeeMinor: 5_000_00n, // 5,000 SDG within the city
+  codMaxMinor: 300_000_00n,
+  newBuyerMaxMinor: 500_000_00n,
+  newAccountDays: 7,
+  paymentHours: 24,
+  handoverHours: 72,
+  inspectionHours: 48,
+  newSellerHoldDays: 7,
+  newSellerOrders: 3,
+} as const;

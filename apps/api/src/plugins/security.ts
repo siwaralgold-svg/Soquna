@@ -34,6 +34,8 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
 
   app.addHook('onRequest', async (request) => {
     if (SAFE_METHODS.has(request.method)) return;
+    // Server-to-server webhooks carry no cookies and prove themselves with a signature.
+    if ((request.routeOptions.config as { signedWebhook?: boolean }).signedWebhook) return;
 
     // CSRF: a custom header can't be sent cross-site without a CORS preflight, and we never
     // enable CORS. The origin check is a second layer.

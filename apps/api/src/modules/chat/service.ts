@@ -14,6 +14,7 @@ import {
   media,
   messages,
   offers,
+  orders,
   users,
 } from '@souqna/db';
 import {
@@ -26,7 +27,7 @@ import {
   type ChatFlag,
   type OfferStatus,
 } from '@souqna/domain';
-import { and, asc, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt, ne, or, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { AppContext } from '../../context';
 import { AppError } from '../../lib/errors';
@@ -75,8 +76,17 @@ export async function startConversation(
     .select({ sellerId: listings.sellerId, status: listings.status })
     .from(listings)
     .where(eq(listings.id, listingId));
-  if (!listing || listing.status !== 'active') throw new AppError('listing_unavailable');
+  if (!listing) throw new AppError('listing_unavailable');
   if (listing.sellerId === buyerId) throw new AppError('forbidden');
+  // New chats are for items on sale; a buyer with an order on the item can always talk to the seller.
+  if (listing.status !== 'active') {
+    const [order] = await ctx.db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(eq(orders.listingId, listingId), eq(orders.buyerId, buyerId)))
+      .limit(1);
+    if (!order) throw new AppError('listing_unavailable');
+  }
 
   const [existing] = await ctx.db
     .select({ id: conversations.id })
@@ -199,6 +209,41 @@ export async function listMessages(
   return { items: page.map((r) => toMessage(r, now)), hasMore };
 }
 
+/**
+ * Once the buyer's money is in escrow for this listing, the two people may need to arrange
+ * the hand-over, so phone numbers are no longer masked between them (decision 009).
+ * Cash-on-delivery orders go through a courier, so they stay masked.
+ */
+async function hasPaidOrder(
+  db: Pick<AppContext['db'], 'select'>,
+  listingId: string,
+  buyerId: string,
+) {
+  const [row] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.listingId, listingId),
+        eq(orders.buyerId, buyerId),
+        inArray(orders.status, [...PAID_STATUSES]),
+        ne(orders.paymentMethod, 'cod'),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+const PAID_STATUSES = [
+  'funds_held',
+  'ready_for_pickup',
+  'picked_up',
+  'out_for_delivery',
+  'delivery_failed',
+  'delivered',
+  'disputed',
+] as const;
+
 export async function sendMessage(
   ctx: AppContext,
   conv: ConversationAccess,
@@ -221,7 +266,9 @@ export async function sendMessage(
     let values: typeof messages.$inferInsert;
     let flags: ChatFlag[] = [];
     if (input.type === 'text') {
-      const prepared = prepareChatText(input.text);
+      const prepared = prepareChatText(input.text, {
+        maskContact: !(await hasPaidOrder(tx, conv.listingId, conv.buyerId)),
+      });
       flags = prepared.flags;
       values = { conversationId: conv.id, senderId, type: 'text', body: prepared.text, flags };
     } else if (input.type === 'image') {

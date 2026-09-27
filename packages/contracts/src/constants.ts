@@ -29,6 +29,10 @@ export const ERROR_CODES = [
   'listing_unavailable',
   'chat_limit_reached',
   'offer_not_allowed',
+  'order_not_allowed',
+  'order_limit_reached',
+  'payment_reference_used',
+  'mfa_required',
   'internal_error',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -66,13 +70,23 @@ export const CHAT_TEXT_MAX = 1000;
 export const OFFER_ACTIONS = ['accept', 'decline', 'withdraw'] as const;
 export type OfferAction = (typeof OFFER_ACTIONS)[number];
 
-/** Events the server pushes over Socket.IO. Each carries a ChatMessage. */
+/** Events the server pushes over Socket.IO. Chat events carry a ChatMessage. */
 export const REALTIME_EVENTS = {
   message: 'chat:message',
   messageUpdated: 'chat:message-updated',
+  /** Carries { orderId, status }: the order page re-fetches. */
+  orderUpdated: 'order:updated',
 } as const;
 
 export interface UnreadCount {
   signedIn: boolean;
   count: number;
 }
+
+/** What a buyer or seller can do to an order from the app (Phase 4). */
+export const ORDER_ACTIONS = ['cancel', 'mark_ready', 'confirm_cod', 'confirm_received'] as const;
+export type OrderAction = (typeof ORDER_ACTIONS)[number];
+
+/** Offered at checkout now; seller-arranged delivery arrives with Phase 5. */
+export const CHECKOUT_DELIVERY_METHODS = ['courier', 'meetup'] as const;
+export type CheckoutDeliveryMethod = (typeof CHECKOUT_DELIVERY_METHODS)[number];

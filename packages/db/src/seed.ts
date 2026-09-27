@@ -1,7 +1,12 @@
 import { sql } from 'drizzle-orm';
 import type { Database } from './index';
-import { categories, cities, neighbourhoods, prohibitedTerms } from './schema';
-import { SEED_CATEGORIES, SEED_CITIES, SEED_PROHIBITED_TERMS } from './seed-data';
+import { categories, cities, neighbourhoods, orderConfigs, prohibitedTerms } from './schema';
+import {
+  SEED_CATEGORIES,
+  SEED_CITIES,
+  SEED_ORDER_CONFIG,
+  SEED_PROHIBITED_TERMS,
+} from './seed-data';
 
 /** Idempotent: safe to run on every deploy. Updates names, never deletes. */
 export async function seed(db: Database): Promise<void> {
@@ -52,6 +57,10 @@ export async function seed(db: Database): Promise<void> {
       .insert(prohibitedTerms)
       .values([...SEED_PROHIBITED_TERMS])
       .onConflictDoNothing();
+
+    // Only the first time: later changes are new rows (never edits), made on purpose.
+    const [config] = await tx.select({ id: orderConfigs.id }).from(orderConfigs).limit(1);
+    if (!config) await tx.insert(orderConfigs).values(SEED_ORDER_CONFIG);
   });
 }
 

@@ -5,6 +5,7 @@ import { Redis } from 'ioredis';
 import { pino } from 'pino';
 import { buildApp } from './app';
 import { loadConfig } from './config';
+import { startOrderTimers } from './jobs/timers';
 import { MockSmsProvider, WhatsAppOtpProvider } from './providers/sms';
 import { createStorage } from './providers/storage';
 
@@ -22,7 +23,10 @@ const sms =
 
 const app = await buildApp({ config, db: db.db, redis, storage, sms });
 
+const stopTimers = startOrderTimers(app.ctx, app.log);
+
 const shutdown = async () => {
+  stopTimers();
   await app.close();
   await db.close();
   redis.disconnect();

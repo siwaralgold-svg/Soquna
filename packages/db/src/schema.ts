@@ -1,4 +1,15 @@
-import { LISTING_CONDITIONS, LISTING_STATUSES, OFFER_STATUSES } from '@souqna/domain';
+import {
+  DELIVERY_METHODS,
+  LEDGER_ACCOUNTS,
+  LISTING_CONDITIONS,
+  LISTING_LOCKING_STATUSES,
+  LISTING_STATUSES,
+  OFFER_STATUSES,
+  ORDER_ACTORS,
+  ORDER_STATUSES,
+  OWNED_ACCOUNTS,
+  PAYMENT_METHODS,
+} from '@souqna/domain';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -16,6 +27,7 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -40,7 +52,12 @@ export const staffRole = pgEnum('staff_role', [
   'admin',
   'verifier',
 ]);
-export const mediaKind = pgEnum('media_kind', ['avatar', 'listing_photo', 'chat_photo']);
+export const mediaKind = pgEnum('media_kind', [
+  'avatar',
+  'listing_photo',
+  'chat_photo',
+  'payment_proof',
+]);
 export const mediaStatus = pgEnum('media_status', ['ready', 'deleted']);
 
 export const cities = pgTable('cities', {
@@ -435,4 +452,250 @@ export const fraudFlags = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('fraud_flags_user_idx').on(t.userId, t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------------------
+// Phase 4: orders, payments, ledger
+// ---------------------------------------------------------------------------------------
+
+/** TOTP second factor for staff (finance, admins). Enrolled from the command line. */
+export const staffMfa = pgTable('staff_mfa', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  /** AES-256-GCM encrypted base32 secret. */
+  secretEnc: bytea('secret_enc').notNull(),
+  /** Last accepted 30-second step, so a code can't be used twice. */
+  lastUsedStep: bigint('last_used_step', { mode: 'number' }),
+  createdAt: createdAt(),
+});
+
+const money = (name: string) => bigint(name, { mode: 'bigint' });
+
+/**
+ * Checkout settings (fees, limits, timers). Rows are never edited: a new row with a later
+ * `effective_from` replaces the old one, and each order keeps the row it was priced with.
+ */
+export const orderConfigs = pgTable(
+  'order_configs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    protectionFixedMinor: money('protection_fixed_minor').notNull(),
+    protectionPctBps: integer('protection_pct_bps').notNull(),
+    protectionCapMinor: money('protection_cap_minor').notNull(),
+    courierFeeMinor: money('courier_fee_minor').notNull(),
+    codMaxMinor: money('cod_max_minor').notNull(),
+    newBuyerMaxMinor: money('new_buyer_max_minor').notNull(),
+    newAccountDays: integer('new_account_days').notNull(),
+    paymentHours: integer('payment_hours').notNull(),
+    handoverHours: integer('handover_hours').notNull(),
+    inspectionHours: integer('inspection_hours').notNull(),
+    newSellerHoldDays: integer('new_seller_hold_days').notNull(),
+    newSellerOrders: integer('new_seller_orders').notNull(),
+    effectiveFrom: tstz('effective_from').notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check(
+      'order_configs_sane',
+      sql`${t.protectionFixedMinor} >= 0 and ${t.protectionPctBps} between 0 and 10000
+        and ${t.protectionCapMinor} >= 0 and ${t.courierFeeMinor} >= 0 and ${t.codMaxMinor} >= 0
+        and ${t.newBuyerMaxMinor} > 0 and ${t.paymentHours} > 0 and ${t.handoverHours} > 0
+        and ${t.inspectionHours} > 0 and ${t.newSellerHoldDays} >= 0 and ${t.newSellerOrders} >= 0`,
+    ),
+  ],
+);
+
+export const orderStatus = pgEnum('order_status', ORDER_STATUSES);
+export const paymentMethod = pgEnum('payment_method', PAYMENT_METHODS);
+export const deliveryMethod = pgEnum('delivery_method', DELIVERY_METHODS);
+export const orderActor = pgEnum('order_actor', ORDER_ACTORS);
+export const paymentStatus = pgEnum('payment_status', ['submitted', 'verified', 'rejected']);
+export const ledgerAccountCode = pgEnum('ledger_account_code', LEDGER_ACCOUNTS);
+
+const inList = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(', '));
+
+/**
+ * Orders. `status` is only ever changed by transition() in apps/api/src/modules/orders,
+ * which also writes order_events and the ledger in the same DB transaction.
+ */
+export const orders = pgTable(
+  'orders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Short code people quote (e.g. in the bank transfer note): "SQ-7K3M9Q". */
+    publicCode: text('public_code').notNull().unique(),
+    listingId: uuid('listing_id')
+      .notNull()
+      .references(() => listings.id),
+    buyerId: uuid('buyer_id')
+      .notNull()
+      .references(() => users.id),
+    sellerId: uuid('seller_id')
+      .notNull()
+      .references(() => users.id),
+    offerId: uuid('offer_id').references(() => offers.id),
+    /** Assigned in Phase 5. */
+    courierId: uuid('courier_id').references(() => users.id),
+    status: orderStatus('status').notNull(),
+    paymentMethod: paymentMethod('payment_method').notNull(),
+    deliveryMethod: deliveryMethod('delivery_method').notNull(),
+    itemMinor: money('item_minor').notNull(),
+    deliveryMinor: money('delivery_minor').notNull(),
+    protectionMinor: money('protection_minor').notNull(),
+    totalMinor: money('total_minor').notNull(),
+    configId: uuid('config_id')
+      .notNull()
+      .references(() => orderConfigs.id),
+    /** Pay by then (for cash on delivery: the seller must confirm by then). */
+    paymentDueAt: tstz('payment_due_at'),
+    handoverDueAt: tstz('handover_due_at'),
+    inspectionEndsAt: tstz('inspection_ends_at'),
+    payoutHoldUntil: tstz('payout_hold_until'),
+    version: integer('version').notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    // One active order per listing: the database itself prevents selling an item twice.
+    uniqueIndex('orders_one_active_per_listing_uq')
+      .on(t.listingId)
+      .where(sql`${t.status} in (${inList(LISTING_LOCKING_STATUSES)})`),
+    index('orders_buyer_idx').on(t.buyerId, t.createdAt),
+    index('orders_seller_idx').on(t.sellerId, t.createdAt),
+    index('orders_payment_due_idx')
+      .on(t.paymentDueAt)
+      .where(sql`${t.paymentDueAt} is not null`),
+    index('orders_handover_due_idx')
+      .on(t.handoverDueAt)
+      .where(sql`${t.handoverDueAt} is not null`),
+    index('orders_inspection_idx')
+      .on(t.inspectionEndsAt)
+      .where(sql`${t.inspectionEndsAt} is not null`),
+    index('orders_payout_hold_idx')
+      .on(t.payoutHoldUntil)
+      .where(sql`${t.payoutHoldUntil} is not null`),
+    check('orders_not_self', sql`${t.buyerId} <> ${t.sellerId}`),
+    check(
+      'orders_amounts',
+      sql`${t.itemMinor} > 0 and ${t.deliveryMinor} >= 0 and ${t.protectionMinor} >= 0
+        and ${t.totalMinor} = ${t.itemMinor} + ${t.deliveryMinor} + ${t.protectionMinor}`,
+    ),
+  ],
+);
+
+/** Every status change: who, when, why. Append-only (trigger in migration 0006). */
+export const orderEvents = pgTable(
+  'order_events',
+  {
+    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id),
+    fromStatus: orderStatus('from_status'),
+    toStatus: orderStatus('to_status').notNull(),
+    event: text('event').notNull(),
+    actorType: orderActor('actor_type').notNull(),
+    actorId: uuid('actor_id'),
+    reason: text('reason'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+    idempotencyKey: text('idempotency_key'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('order_events_order_idx').on(t.orderId, t.id),
+    uniqueIndex('order_events_idem_uq')
+      .on(t.orderId, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
+  ],
+);
+
+/** A payment claim: a bank transfer reference to verify, or a provider's confirmation. */
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id),
+    method: paymentMethod('method').notNull(),
+    amountMinor: money('amount_minor').notNull(),
+    /** Normalised (see normalizePaymentReference). */
+    reference: text('reference').notNull(),
+    proofMediaId: uuid('proof_media_id').references(() => media.id),
+    status: paymentStatus('status').notNull().default('submitted'),
+    submittedBy: uuid('submitted_by').references(() => users.id),
+    reviewedBy: uuid('reviewed_by').references(() => users.id),
+    reviewedAt: tstz('reviewed_at'),
+    rejectionReason: text('rejection_reason'),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // The same transfer can't be claimed twice (unless finance rejected the claim).
+    uniqueIndex('payments_reference_uq')
+      .on(t.reference)
+      .where(sql`${t.status} <> 'rejected'`),
+    // One claim under review per order at a time.
+    uniqueIndex('payments_one_open_per_order_uq')
+      .on(t.orderId)
+      .where(sql`${t.status} = 'submitted'`),
+    index('payments_status_idx').on(t.status, t.createdAt),
+    uniqueIndex('payments_proof_uq').on(t.proofMediaId),
+    check('payments_amount_positive', sql`${t.amountMinor} > 0`),
+  ],
+);
+
+export const ledgerAccounts = pgTable(
+  'ledger_accounts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: ledgerAccountCode('code').notNull(),
+    /** The person for per-person accounts (seller_balance:{id}…); null for platform accounts. */
+    ownerId: uuid('owner_id').references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique('ledger_accounts_code_owner_uq').on(t.code, t.ownerId).nullsNotDistinct(),
+    check(
+      'ledger_accounts_owner',
+      sql`(${t.code} in (${inList(OWNED_ACCOUNTS)})) = (${t.ownerId} is not null)`,
+    ),
+  ],
+);
+
+/** One movement of money. Append-only; its entries must sum to zero (deferred trigger). */
+export const ledgerTransactions = pgTable(
+  'ledger_transactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The order event (or payout action) that caused it. */
+    kind: text('kind').notNull(),
+    orderId: uuid('order_id').references(() => orders.id),
+    paymentId: uuid('payment_id').references(() => payments.id),
+    idempotencyKey: text('idempotency_key').notNull().unique(),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index('ledger_transactions_order_idx').on(t.orderId)],
+);
+
+/** + debit / − credit, never zero. Append-only. */
+export const ledgerEntries = pgTable(
+  'ledger_entries',
+  {
+    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    transactionId: uuid('transaction_id')
+      .notNull()
+      .references(() => ledgerTransactions.id),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => ledgerAccounts.id),
+    amountMinor: money('amount_minor').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('ledger_entries_account_idx').on(t.accountId),
+    index('ledger_entries_transaction_idx').on(t.transactionId),
+    check('ledger_entries_non_zero', sql`${t.amountMinor} <> 0`),
+  ],
 );

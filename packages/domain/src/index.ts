@@ -7,3 +7,6 @@ export * from './money';
 export * from './offer';
 export * from './prohibited';
 export * from './search';
+export * from './order';
+export * from './fees';
+export * from './ledger';

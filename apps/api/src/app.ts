@@ -7,6 +7,9 @@ import { registerSessionHook } from './modules/auth/session';
 import { catalogRoutes } from './modules/catalog/routes';
 import { chatRoutes } from './modules/chat/routes';
 import { devRoutes } from './modules/dev/routes';
+import { orderRoutes } from './modules/orders/routes';
+import { paymentWebhookRoutes } from './modules/payments/routes';
+import { staffRoutes } from './modules/staff/routes';
 import { listingRoutes } from './modules/listings/routes';
 import { profileRoutes } from './modules/profile/routes';
 import { registerErrorHandling } from './plugins/errors';
@@ -65,6 +68,9 @@ export async function buildApp(
       await api.register(catalogRoutes);
       await api.register(listingRoutes);
       await api.register(chatRoutes);
+      await api.register(orderRoutes);
+      await api.register(staffRoutes);
+      await api.register(paymentWebhookRoutes);
       if (deps.config.NODE_ENV !== 'production') await api.register(devRoutes);
     },
     { prefix: '/api' },

@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError } from '../../lib/errors';
 import { photoKey } from '../listings/photos';
+import { requireStaff } from '../staff/mfa';
 
 const mediaParams = z.object({ id: z.uuid() });
 const mediaQuery = z.object({
@@ -50,7 +51,8 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
   //  - avatars: everyone (they appear next to listings);
   //  - listing photos: everyone while the listing is public, otherwise only the seller
   //    (drafts, listings under review, and photos not yet attached to a listing);
-  //  - chat photos: only the two people in the conversation (and the sender before sending).
+  //  - chat photos: only the two people in the conversation (and the sender before sending);
+  //  - payment screenshots: only the buyer who uploaded it and finance staff (with 2FA).
   // Images get their own, higher limit: one page of listings loads ~20 of them.
   app.get(
     '/media/:id',
@@ -93,6 +95,18 @@ export async function catalogRoutes(app: FastifyInstance): Promise<void> {
         if (!allowed) throw new AppError('not_found');
         key = photoKey(row.storageKey, w);
         cacheControl = 'private, max-age=86400';
+      } else if (row.kind === 'payment_proof') {
+        const viewer = request.auth?.userId;
+        const allowed =
+          viewer !== undefined &&
+          (viewer === row.ownerId ||
+            (await requireStaff(ctx, request, ['finance', 'admin']).then(
+              () => true,
+              () => false,
+            )));
+        if (!allowed) throw new AppError('not_found');
+        key = photoKey(row.storageKey, w);
+        cacheControl = 'private, no-store';
       }
 
       const object = await ctx.storage.get(key);

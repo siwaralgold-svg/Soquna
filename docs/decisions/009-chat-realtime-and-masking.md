@@ -25,7 +25,7 @@ Status: Accepted (Phase 3)
 
 - Before an order exists, phone numbers (Arabic or Western digits, with spaces or dashes) and links or `@handles` are replaced with `•••` **on the server before storing**. The original is never kept, so it can't leak through the API, notifications or a database dump.
 - Phrases that push payment off the platform ("حوّل لي", "بنكك", "كاش", "واتساب", "pay me directly"…) are allowed but flagged. Both people see a warning under the message, and a `fraud_flags` row goes to the fraud queue (the admin screens come in Phase 6).
-- Phase 4 will relax masking for the two people once an order between them is paid into escrow and delivery needs a phone number.
+- Once the buyer's money is in escrow for that listing (a prepaid order from `funds_held` on), masking stops between those two people so they can arrange the hand-over. Off-platform payment talk is still flagged. Cash-on-delivery orders stay masked: the courier handles them. (Done in Phase 4.)
 
 ## Offers
 

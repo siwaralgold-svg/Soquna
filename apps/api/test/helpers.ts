@@ -23,7 +23,7 @@ export interface TestApp {
 
 const key = () => randomBytes(32).toString('base64');
 
-export async function createTestApp(): Promise<TestApp> {
+export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
   const db = await createTestDatabase();
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) throw new Error('Set REDIS_URL to run API tests.');
@@ -44,6 +44,7 @@ export async function createTestApp(): Promise<TestApp> {
     SESSION_COOKIE_SECURE: 'true',
     SMS_PROVIDER: 'mock',
     STORAGE_DRIVER: 'memory',
+    ...env,
   });
 
   const logs: string[] = [];

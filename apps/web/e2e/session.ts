@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import { BASE_URL, randomLocalPhone } from './helpers';
@@ -6,7 +7,7 @@ import { BASE_URL, randomLocalPhone } from './helpers';
  * Logs in through the API (the same endpoints the login screen uses) and completes the
  * profile, so tests that aren't about login start from a ready seller or buyer.
  */
-export async function loginAs(page: Page, displayName: string): Promise<void> {
+export async function loginAs(page: Page, displayName: string): Promise<string> {
   const headers = { 'x-souqna-csrf': '1', origin: new URL(BASE_URL).origin };
   const phone = randomLocalPhone();
 
@@ -29,6 +30,21 @@ export async function loginAs(page: Page, displayName: string): Promise<void> {
     data: { displayName, cityId: portSudan.id },
   });
   expect(patched.ok()).toBe(true);
+  return phone;
+}
+
+const repoRoot = new URL('../../../', import.meta.url).pathname;
+const staffCli = (...args: string[]) =>
+  execFileSync('pnpm', ['--silent', 'staff', ...args], { cwd: repoRoot, encoding: 'utf8' });
+
+/** Makes a logged-in user a finance staff member (the same `pnpm staff` command people use). */
+export function grantFinance(phone: string): void {
+  staffCli('grant', phone, 'finance');
+}
+
+/** The person's current 2FA code (development-only command). */
+export function staffCode(phone: string): string {
+  return staffCli('code', phone).trim().split('\n').at(-1)!;
 }
 
 /** A test photo: a coloured square with a shape, so screenshots show something real. */

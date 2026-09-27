@@ -20,6 +20,10 @@ const STATUS: Record<ErrorCode, number> = {
   listing_unavailable: 409,
   chat_limit_reached: 429,
   offer_not_allowed: 409,
+  order_not_allowed: 422,
+  order_limit_reached: 429,
+  payment_reference_used: 409,
+  mfa_required: 403,
   internal_error: 500,
 };
 
@@ -33,4 +37,13 @@ export class AppError extends Error {
     super(code);
     this.statusCode = STATUS[code];
   }
+}
+
+/** True when a query failed on the named unique index/constraint (Postgres code 23505). */
+export function isUniqueViolation(err: unknown, constraint: string): boolean {
+  for (let e: unknown = err; e instanceof Error; e = e.cause) {
+    const pg = e as Error & { code?: string; constraint_name?: string };
+    if (pg.code === '23505' && pg.constraint_name === constraint) return true;
+  }
+  return false;
 }

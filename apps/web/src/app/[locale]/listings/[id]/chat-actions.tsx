@@ -35,7 +35,7 @@ export function ChatActions({ listingId, negotiable }: { listingId: string; nego
           type="button"
           disabled={busy}
           onClick={() => void open(false)}
-          className={buttonClasses('primary')}
+          className={buttonClasses('secondary')}
         >
           {busy ? t('chatStarting') : t('chatSeller')}
         </button>

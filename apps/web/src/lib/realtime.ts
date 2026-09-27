@@ -2,8 +2,13 @@ import type { ChatMessage } from '@souqna/contracts';
 import { REALTIME_EVENTS, REALTIME_PATH } from '@souqna/contracts/constants';
 import type { Socket } from 'socket.io-client';
 
-type Handler = (message: ChatMessage) => void;
-type Event = (typeof REALTIME_EVENTS)[keyof typeof REALTIME_EVENTS];
+interface Payloads {
+  [REALTIME_EVENTS.message]: ChatMessage;
+  [REALTIME_EVENTS.messageUpdated]: ChatMessage;
+  [REALTIME_EVENTS.orderUpdated]: { orderId: string; status: string };
+}
+type Event = keyof Payloads;
+type Handler = (payload: never) => void;
 
 /**
  * One shared Socket.IO connection per tab, opened lazily by whichever screen needs it first.
@@ -33,7 +38,9 @@ function ensureSocket(): Promise<Socket> {
       if (reason === 'io server disconnect') closeRealtime();
     });
     for (const event of Object.values(REALTIME_EVENTS)) {
-      s.on(event, (message: ChatMessage) => handlers.get(event)?.forEach((fn) => fn(message)));
+      s.on(event, (payload: unknown) => {
+        handlers.get(event)?.forEach((fn) => fn(payload as never));
+      });
     }
     return s;
   });
@@ -41,14 +48,17 @@ function ensureSocket(): Promise<Socket> {
 }
 
 /** Listens for a pushed event. Returns a function that stops listening. */
-export function onRealtime(event: Event, handler: Handler): () => void {
+export function onRealtime<E extends Event>(
+  event: E,
+  handler: (payload: Payloads[E]) => void,
+): () => void {
   void ensureSocket().catch(() => {
     socket = null; // chunk failed to load (offline); the next subscriber tries again
   });
-  const set = handlers.get(event) ?? new Set();
-  set.add(handler);
+  const set = handlers.get(event) ?? new Set<Handler>();
+  set.add(handler as Handler);
   handlers.set(event, set);
-  return () => set.delete(handler);
+  return () => set.delete(handler as Handler);
 }
 
 /** False while offline or before the first connection: screens then poll instead. */

@@ -6,6 +6,7 @@ import { effectiveOfferStatus } from '@souqna/domain';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { ShieldIcon, TagIcon } from '@/components/icons';
 import { buttonClasses } from '@/components/ui';
+import { Link } from '@/i18n/navigation';
 import { formatPrice, photoUrl } from '@/lib/format';
 
 const bubble = (mine: boolean) =>
@@ -20,12 +21,16 @@ export function MessageItem({
   mine,
   role,
   busy,
+  listingId,
+  listingActive,
   onOfferAction,
 }: {
   message: ChatMessage;
   mine: boolean;
   role: 'buyer' | 'seller';
   busy: boolean;
+  listingId: string;
+  listingActive: boolean;
   onOfferAction: (offerId: string, action: OfferAction) => void;
 }) {
   const t = useTranslations('chat');
@@ -41,6 +46,8 @@ export function MessageItem({
           role={role}
           busy={busy}
           time={time}
+          listingId={listingId}
+          listingActive={listingActive}
           onAction={(action) => onOfferAction(message.offer!.id, action)}
         />
       ) : (
@@ -86,6 +93,8 @@ function OfferCard({
   role,
   busy,
   time,
+  listingId,
+  listingActive,
   onAction,
 }: {
   offer: NonNullable<ChatMessage['offer']>;
@@ -93,6 +102,8 @@ function OfferCard({
   role: 'buyer' | 'seller';
   busy: boolean;
   time: string;
+  listingId: string;
+  listingActive: boolean;
   onAction: (action: OfferAction) => void;
 }) {
   const t = useTranslations('chat');
@@ -128,7 +139,22 @@ function OfferCard({
             : time}
         </span>
       </p>
-      {status === 'accepted' && <p className="text-sm">{t('offerAcceptedNote')}</p>}
+      {status === 'accepted' &&
+        (role === 'buyer' ? (
+          <>
+            <p className="text-sm">{t('offerAcceptedNote')}</p>
+            {listingActive && (
+              <Link
+                href={`/checkout/${listingId}?offer=${offer.id}`}
+                className={buttonClasses('primary', 'min-h-11 w-full px-2')}
+              >
+                {t('buyAtOffer')}
+              </Link>
+            )}
+          </>
+        ) : (
+          <p className="text-sm">{t('offerAcceptedSeller')}</p>
+        ))}
       {status === 'pending' && role === 'seller' && (
         <div className="grid grid-cols-2 gap-2">
           <button

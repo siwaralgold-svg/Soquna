@@ -5,17 +5,23 @@ import type { AppContext } from '../../context';
 import { sha256 } from '../../lib/crypto';
 import { encodeWebp, openImage } from '../../lib/images';
 
+const FOLDER = {
+  listing_photo: 'listings',
+  chat_photo: 'chat',
+  payment_proof: 'payments',
+} as const;
+
 export const photoKey = (storageKey: string, width: number) => `${storageKey}/${width}.webp`;
 
 /**
  * Stores an uploaded photo in three widths (320/800/1280 px, never enlarged), as re-encoded
  * WebP without metadata. It stays unattached (visible only to its owner) until it is used in a
- * listing or sent in a chat.
+ * listing, sent in a chat, or attached to a payment.
  */
 export async function storePhoto(
   ctx: AppContext,
   ownerId: string,
-  kind: 'listing_photo' | 'chat_photo',
+  kind: 'listing_photo' | 'chat_photo' | 'payment_proof',
   input: Buffer,
 ): Promise<{ id: string }> {
   const image = await openImage(input);
@@ -29,7 +35,7 @@ export async function storePhoto(
   );
 
   const id = randomUUID();
-  const storageKey = `${kind === 'listing_photo' ? 'listings' : 'chat'}/${ownerId}/${id}`;
+  const storageKey = `${FOLDER[kind]}/${ownerId}/${id}`;
   await Promise.all(
     variants.map((v, i) =>
       ctx.storage.put(photoKey(storageKey, PHOTO_WIDTHS[i]!), v.data, 'image/webp'),

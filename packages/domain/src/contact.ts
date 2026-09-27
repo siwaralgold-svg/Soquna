@@ -65,11 +65,19 @@ export function mentionsOffPlatformPayment(text: string): boolean {
 export type ChatFlag = 'contact_masked' | 'off_platform';
 
 /**
- * Prepares a chat message before an order exists: contact details are masked (the original is
- * never stored) and risky phrasing is flagged.
+ * Prepares a chat message. Before a paid order exists, contact details are masked (the
+ * original is never stored). Once the buyer has paid into escrow, the two people may need
+ * to arrange the hand-over, so numbers are kept (`maskContact: false`). Off-platform payment
+ * talk is flagged either way.
  */
-export function prepareChatText(text: string): { text: string; flags: ChatFlag[] } {
-  const { text: masked, masked: didMask } = maskContactInfo(text.trim());
+export function prepareChatText(
+  text: string,
+  { maskContact = true }: { maskContact?: boolean } = {},
+): { text: string; flags: ChatFlag[] } {
+  const trimmed = text.trim();
+  const { text: masked, masked: didMask } = maskContact
+    ? maskContactInfo(trimmed)
+    : { text: trimmed, masked: false };
   const flags: ChatFlag[] = [];
   if (didMask) flags.push('contact_masked');
   if (mentionsOffPlatformPayment(text)) flags.push('off_platform');

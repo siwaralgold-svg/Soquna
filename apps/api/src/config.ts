@@ -38,6 +38,17 @@ const envSchema = z
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     S3_FORCE_PATH_STYLE: bool,
+    /** The platform's receiving account, shown to buyers paying by bank transfer (Bankak). */
+    PAYMENT_BANK_NAME: z.string().default('Bankak (Bank of Khartoum)'),
+    PAYMENT_ACCOUNT_NAME: z.string().default('CHANGE-ME'),
+    PAYMENT_ACCOUNT_NUMBER: z.string().default('CHANGE-ME'),
+    /** "Test payment" button that pays instantly. Never in production. */
+    PAYMENT_MOCK_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
+    /** Shared secret for a future licensed gateway's signed webhooks. Empty = disabled. */
+    PSP_WEBHOOK_SECRET: z.string().default(''),
     S3_CREATE_BUCKET: z
       .enum(['true', 'false'])
       .default('false')
@@ -56,6 +67,20 @@ const envSchema = z
         code: 'custom',
         path: ['STORAGE_DRIVER'],
         message: 'memory is not allowed in production',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.PAYMENT_MOCK_ENABLED) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PAYMENT_MOCK_ENABLED'],
+        message: 'test payments are not allowed in production',
+      });
+    }
+    if (env.NODE_ENV === 'production' && env.PAYMENT_ACCOUNT_NUMBER === 'CHANGE-ME') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PAYMENT_ACCOUNT_NUMBER'],
+        message: 'set the real receiving account',
       });
     }
     if (env.NODE_ENV === 'production' && !env.SESSION_COOKIE_SECURE) {

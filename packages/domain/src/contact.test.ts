@@ -70,6 +70,13 @@ describe('prepareChatText', () => {
     expect(mentionsOffPlatformPayment(text)).toBe(true);
   });
 
+  it('keeps numbers once the buyer has paid, but still flags off-platform payment', () => {
+    expect(prepareChatText('رقمي 0912345678، كاش برضو؟', { maskContact: false })).toEqual({
+      text: 'رقمي 0912345678، كاش برضو؟',
+      flags: ['off_platform'],
+    });
+  });
+
   it('passes a normal question', () => {
     expect(prepareChatText('الموبايل لسه موجود؟')).toEqual({
       text: 'الموبايل لسه موجود؟',

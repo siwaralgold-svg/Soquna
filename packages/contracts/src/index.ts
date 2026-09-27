@@ -1,4 +1,5 @@
 import {
+  type CheckoutRefusal,
   cleanDisplayName,
   containsContactInfo,
   LISTING_CONDITIONS,
@@ -6,12 +7,26 @@ import {
   MAX_LISTING_PHOTOS,
   OFFER_STATUSES,
   normalizeSudanPhone,
+  type DeliveryMethod,
+  type ListingStatus,
+  type OrderStatus,
+  PAYMENT_METHODS,
+  type PaymentMethod,
   parsePriceInput,
   toAsciiDigits,
   validateDisplayName,
 } from '@souqna/domain';
 import { z } from 'zod';
-import { CHAT_TEXT_MAX, LISTING_SORTS, LOCALES, OFFER_ACTIONS, REPORT_REASONS } from './constants';
+import {
+  CHAT_TEXT_MAX,
+  CHECKOUT_DELIVERY_METHODS,
+  LISTING_SORTS,
+  LOCALES,
+  OFFER_ACTIONS,
+  ORDER_ACTIONS,
+  type OrderAction,
+  REPORT_REASONS,
+} from './constants';
 
 export * from './constants';
 
@@ -308,3 +323,151 @@ export const conversationSummary = z.object({
   lastMessageAt: z.string(),
 });
 export type ConversationSummary = z.infer<typeof conversationSummary>;
+
+// ---------------------------------------------------------------------------------------
+// Checkout, orders, payments (Phase 4)
+// ---------------------------------------------------------------------------------------
+
+export const checkoutQuery = z.object({
+  listingId: z.uuid(),
+  offerId: z.uuid().optional(),
+  deliveryMethod: z.enum(CHECKOUT_DELIVERY_METHODS).default('courier'),
+});
+
+export const createOrderInput = z
+  .object({
+    listingId: z.uuid(),
+    /** Buy at a price the seller accepted in chat. */
+    offerId: z.uuid().optional(),
+    paymentMethod: z.enum(PAYMENT_METHODS),
+    deliveryMethod: z.enum(CHECKOUT_DELIVERY_METHODS),
+  })
+  .strict();
+
+export const orderActionInput = z
+  .object({
+    action: z.enum(ORDER_ACTIONS),
+    reason: z.string().trim().max(300).optional(),
+  })
+  .strict();
+
+export const submitPaymentInput = z
+  .object({
+    /** The bank's transaction reference (not needed for test payments). */
+    reference: z.string().trim().max(60).optional(),
+    /** Optional screenshot of the transfer, uploaded to /payment-proofs first. */
+    proofId: z.uuid().optional(),
+  })
+  .strict();
+
+export const ordersQuery = z.object({ role: z.enum(['buying', 'selling']).default('buying') });
+
+export const staffMfaInput = z.object({ code: z.string().regex(/^\d{6}$/) }).strict();
+export const rejectPaymentInput = z.object({ reason: z.string().trim().min(3).max(300) }).strict();
+
+/** Money is sent as decimal strings of minor units (piastres), never as JSON numbers. */
+export interface MoneyBreakdown {
+  itemMinor: string;
+  deliveryMinor: string;
+  protectionMinor: string;
+  totalMinor: string;
+}
+
+export interface CheckoutQuote extends MoneyBreakdown {
+  listing: { id: string; title: string; coverPhotoId: string | null; sellerName: string };
+  offerId: string | null;
+  deliveryMethod: DeliveryMethod;
+  paymentMethods: Array<{ method: PaymentMethod; refusal: CheckoutRefusal | null }>;
+  paymentHours: number;
+  inspectionHours: number;
+}
+
+export interface OrderSummary {
+  id: string;
+  code: string;
+  status: OrderStatus;
+  role: 'buyer' | 'seller';
+  listing: { id: string; title: string; coverPhotoId: string | null };
+  counterpart: { id: string; displayName: string };
+  totalMinor: string;
+  /** Something is waiting for this person (pay, prepare the item…). */
+  needsAction: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TimelineActor = 'you' | 'buyer' | 'seller' | 'courier' | 'souqna';
+
+export interface OrderDetail extends OrderSummary {
+  paymentMethod: PaymentMethod;
+  deliveryMethod: DeliveryMethod;
+  amounts: MoneyBreakdown;
+  deadlines: {
+    paymentDueAt: string | null;
+    handoverDueAt: string | null;
+    inspectionEndsAt: string | null;
+    payoutHoldUntil: string | null;
+  };
+  /** Buttons to show this person. */
+  actions: OrderAction[];
+  /** The buyer can submit (or resubmit) a payment now. */
+  canPay: boolean;
+  payment: {
+    /** Where to send a bank transfer (buyer only, while unpaid). */
+    instructions: {
+      bankName: string;
+      accountName: string;
+      accountNumber: string;
+      amountMinor: string;
+      note: string;
+    } | null;
+    latest: {
+      status: 'submitted' | 'verified' | 'rejected';
+      reference: string;
+      rejectionReason: string | null;
+      createdAt: string;
+    } | null;
+    submissionsLeft: number;
+  };
+  /** What went back to the buyer, once refunded. */
+  refundMinor: string | null;
+  timeline: Array<{
+    id: string;
+    status: OrderStatus;
+    event: string;
+    by: TimelineActor;
+    reason: string | null;
+    at: string;
+  }>;
+  conversationId: string | null;
+  listingStatus: ListingStatus;
+}
+
+export interface SellerBalance {
+  /** Earned, waiting for the new-seller hold to end. */
+  pendingMinor: string;
+  /** Can be withdrawn (payout requests arrive with the admin tools). */
+  availableMinor: string;
+  /** Refunds on their way back to this person as a buyer. */
+  refundsMinor: string;
+}
+
+export interface StaffMe {
+  roles: string[];
+  mfaEnrolled: boolean;
+  mfaVerified: boolean;
+}
+
+export interface StaffPayment {
+  id: string;
+  status: 'submitted' | 'verified' | 'rejected';
+  method: PaymentMethod;
+  reference: string;
+  amountMinor: string;
+  proofId: string | null;
+  createdAt: string;
+  order: { id: string; code: string; status: OrderStatus; totalMinor: string };
+  buyer: { id: string; displayName: string; accountAgeDays: number };
+  /** Earlier rejected claims on the same order. */
+  previousRejections: number;
+}

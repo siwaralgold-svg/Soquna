@@ -424,6 +424,8 @@ export function ChatScreen({
                 mine={m.senderId !== counterpart.id}
                 role={role}
                 busy={busyOffer === m.offer?.id}
+                listingId={listing.id}
+                listingActive={listing.status === 'active'}
                 onOfferAction={(offerId, action) => void actOnOffer(offerId, action)}
               />
             </MessageRow>

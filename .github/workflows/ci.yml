@@ -44,6 +44,7 @@ jobs:
       SESSION_COOKIE_SECURE: 'true'
       SMS_PROVIDER: mock
       STORAGE_DRIVER: memory
+      PAYMENT_MOCK_ENABLED: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
 
     steps:

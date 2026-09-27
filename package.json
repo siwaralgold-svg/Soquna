@@ -21,7 +21,8 @@
     "db:migrate": "pnpm --filter @souqna/db run migrate",
     "db:seed": "pnpm --filter @souqna/db run seed",
     "db:generate": "pnpm --filter @souqna/db run generate",
-    "moderate": "pnpm --filter @souqna/api exec tsx src/scripts/moderate.ts"
+    "moderate": "pnpm --filter @souqna/api exec tsx src/scripts/moderate.ts",
+    "staff": "pnpm --filter @souqna/api exec tsx src/scripts/staff.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

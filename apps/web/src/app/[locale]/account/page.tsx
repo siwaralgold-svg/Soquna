@@ -3,6 +3,7 @@
 import type { MeResponse } from '@souqna/contracts';
 import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
+import { BalanceCard } from '@/components/balance-card';
 import { DeviceList } from '@/components/device-list';
 import { ProfileForm } from '@/components/profile-form';
 import { Alert, Button, buttonClasses, Card } from '@/components/ui';
@@ -99,6 +100,9 @@ export default function AccountPage() {
       </Card>
 
       <div className="grid grid-cols-2 gap-2">
+        <Link href="/orders" className={buttonClasses('secondary', 'col-span-2')}>
+          {t('account.ordersLink')}
+        </Link>
         <Link href="/my/listings" className={buttonClasses('secondary')}>
           {t('myListings.title')}
         </Link>
@@ -106,6 +110,8 @@ export default function AccountPage() {
           {t('favourites.title')}
         </Link>
       </div>
+
+      <BalanceCard />
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold">{t('account.profileSection')}</h2>
