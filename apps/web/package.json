@@ -16,19 +16,19 @@
     "@souqna/contracts": "workspace:*",
     "@souqna/domain": "workspace:*",
     "@souqna/i18n": "workspace:*",
-    "next": "16.3.6",
-    "next-intl": "^4.14.7",
+    "next": "16.4.0",
+    "next-intl": "^4.14.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.4.0",
     "eslint-plugin-i18next": "^6.1.5",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3"
   }
 }
